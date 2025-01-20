@@ -1,10 +1,18 @@
 use std::io;
 use std::process::{Command, Stdio};
+use libc::geteuid;
 
-/// Ensures the `lm-sensors` package is installed.
+/// Ensures the `lm-sensors` package is installed and checks for sudo access if required.
 pub fn ensure_sensors_installed() -> io::Result<()> {
     if !is_command_available("sensors")? {
         eprintln!("`sensors` command not found. Attempting to install...");
+
+        if !is_running_as_root() && !has_sudo_access()? {
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "Sudo privileges are required to install `lm-sensors`. Please run with sudo or contact your system administrator.",
+            ));
+        }
 
         if install_lm_sensors()? {
             eprintln!("`lm-sensors` successfully installed.");
@@ -32,10 +40,13 @@ fn is_command_available(command: &str) -> io::Result<bool> {
     Ok(status.success())
 }
 
-/// Installs the `lm-sensors` package using `apt-get`.
+/// Installs the `lm-sensors` package using `apt-get`. Avoids using `sudo` if already running as root.
 fn install_lm_sensors() -> io::Result<bool> {
-    let status = Command::new("sudo")
-        .arg("apt-get")
+    let mut command = Command::new("apt-get");
+    if !is_running_as_root() {
+        command.arg("sudo");
+    }
+    let status = command
         .arg("install")
         .arg("-y")
         .arg("lm-sensors")
@@ -44,4 +55,27 @@ fn install_lm_sensors() -> io::Result<bool> {
         .status()?;
 
     Ok(status.success())
+}
+
+/// Checks if the user has sudo access.
+fn has_sudo_access() -> io::Result<bool> {
+    let status = Command::new("sudo")
+        .arg("-n") // Do not prompt for a password
+        .arg("true")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status();
+
+    match status {
+        Ok(status) => Ok(status.success()),
+        Err(e) => {
+            eprintln!("Failed to check sudo access: {}", e);
+            Ok(false)
+        }
+    }
+}
+
+/// Checks if the program is running as root.
+fn is_running_as_root() -> bool {
+    unsafe { geteuid() == 0 }
 }

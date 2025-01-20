@@ -19,7 +19,7 @@ serde_json = "1.0"
 toml = "0.8"
 
 # Signal handling for graceful shutdowns
-libc = "0.2"
+libc = { version = "0.2", features = ["derive"] }
 signal-hook-registry = "1.4"
 
 # Logging

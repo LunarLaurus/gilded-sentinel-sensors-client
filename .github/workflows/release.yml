@@ -2,7 +2,7 @@ name: Create Release
 
 on:
   workflow_run:
-    workflows: ["Rust CI"]
+    workflows: ["Rust Build & Test CI"]
     types:
       - completed
 
@@ -10,7 +10,9 @@ jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: >
+      ${{ github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' }}
 
     strategy:
       matrix:
@@ -40,6 +42,17 @@ jobs:
       - name: Build Executable
         run: cargo build --release --target ${{ matrix.target }}
 
+      # Create a new release
+      - name: Create Release
+        id: create_release  # Add an ID for this step
+        uses: actions/create-release@v1
+        with:
+          tag_name: "v${{ github.run_number }}"
+          release_name: "Release v${{ github.run_number }}"
+          body: "Automated release for version v${{ github.run_number }}."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       # Upload executable to the release
       - name: Upload Executable
         uses: actions/upload-release-asset@v1
@@ -48,13 +61,3 @@ jobs:
           asset_path: ./target/${{ matrix.target }}/release/${{ github.event.repository.name }}
           asset_name: ${{ github.event.repository.name }}_${{ matrix.target }}
           asset_content_type: application/octet-stream
-
-      # Create a new release
-      - name: Create Release
-        uses: actions/create-release@v1
-        with:
-          tag_name: "v${{ github.run_number }}"
-          release_name: "Release v${{ github.run_number }}"
-          body: "Automated release for version v${{ github.run_number }}."
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

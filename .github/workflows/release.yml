@@ -182,7 +182,7 @@ jobs:
   bump-version:
     name: Bump Version
     runs-on: ubuntu-latest
-    needs: [build-x86_64, build-musl, build-aarch64, build-armv7]
+    needs: [build-x86_64, build-musl]
 
     steps:
       - name: Checkout code

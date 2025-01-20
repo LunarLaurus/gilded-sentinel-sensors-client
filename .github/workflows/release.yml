@@ -1,0 +1,60 @@
+name: Create Release
+
+on:
+  workflow_run:
+    workflows: ["Rust CI"]
+    types:
+      - completed
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - aarch64-unknown-linux-gnu
+          - armv7-unknown-linux-gnueabihf
+
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up Rust
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      # Add target
+      - name: Add Target
+        run: rustup target add ${{ matrix.target }}
+
+      # Build the executable
+      - name: Build Executable
+        run: cargo build --release --target ${{ matrix.target }}
+
+      # Upload executable to the release
+      - name: Upload Executable
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./target/${{ matrix.target }}/release/${{ github.event.repository.name }}
+          asset_name: ${{ github.event.repository.name }}_${{ matrix.target }}
+          asset_content_type: application/octet-stream
+
+      # Create a new release
+      - name: Create Release
+        uses: actions/create-release@v1
+        with:
+          tag_name: "v${{ github.run_number }}"
+          release_name: "Release v${{ github.run_number }}"
+          body: "Automated release for version v${{ github.run_number }}."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

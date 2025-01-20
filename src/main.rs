@@ -1,6 +1,8 @@
 mod config;
 mod network;
 mod sensor;
+mod models;
+mod installer;
 
 use config::ConfigLoader;
 use log::{error, info};
@@ -52,7 +54,7 @@ fn setup_signal_handler() -> Result<Arc<AtomicBool>, Box<dyn std::error::Error>>
 
 /// Ensures that the `lm-sensors` package is installed.
 fn ensure_lm_sensors_installed() -> Result<(), Box<dyn std::error::Error>> {
-    if let Err(e) = sensor::ensure_sensors_installed() {
+    if let Err(e) = installer::ensure_sensors_installed() {
         error!("Error ensuring lm-sensors package is installed: {}", e);
         return Err(Box::new(e));
     }

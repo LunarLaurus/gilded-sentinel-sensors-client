@@ -4,10 +4,12 @@ mod sensor;
 
 use config::ConfigLoader;
 use log::{error, info};
-use signal_hook::flag;
+use signal_hook_registry::register;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{thread, time::Duration};
+
+const SIGINT: i32 = libc::SIGINT;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     initialize_logger();
@@ -15,9 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let running = setup_signal_handler()?;
 
-    if let Err(e) = sensor::ensure_sensors_installed() {
-        handle_initialization_error("Error ensuring lm-sensors package is installed", e)?;
-    }
+    ensure_lm_sensors_installed()?;
 
     let config = load_application_config();
     info!(
@@ -42,38 +42,47 @@ fn initialize_logger() {
 fn setup_signal_handler() -> Result<Arc<AtomicBool>, Box<dyn std::error::Error>> {
     let running = Arc::new(AtomicBool::new(true));
     let r = Arc::clone(&running);
-    flag::register(signal_hook::consts::SIGINT, r)?;
+    // Register the signal handler in an unsafe block
+    unsafe {
+        register(SIGINT, move || {
+            r.store(false, Ordering::Relaxed);
+        })?;
+    }
     Ok(running)
 }
 
-/// Handles initialization errors, logging the message and returning an error.
-fn handle_initialization_error(
-    message: &str,
-    error: impl std::error::Error,
-) -> Result<(), Box<dyn std::error::Error>> {
-    error!("{}: {}", message, error);
-    Err(Box::new(error))
+/// Ensures that the `lm-sensors` package is installed.
+fn ensure_lm_sensors_installed() -> Result<(), Box<dyn std::error::Error>> {
+    if let Err(e) = sensor::ensure_sensors_installed() {
+        error!("Error ensuring lm-sensors package is installed: {}", e);
+        return Err(Box::new(e));
+    }
+    Ok(())
 }
 
 /// Loads the application configuration.
 fn load_application_config() -> config::AppConfig {
-    let config_loader = ConfigLoader::new();
-    config_loader.load_config()
+    ConfigLoader::new().load_config()
 }
 
 /// Runs the main loop for data collection and transmission.
 fn run_main_loop(running: &Arc<AtomicBool>, config: &config::AppConfig) {
     while running.load(Ordering::Relaxed) {
-        if let Some(sensor_data) = sensor::collect_sensor_data() {
-            if let Err(e) = network::send_data_to_server(&sensor_data, &config.server) {
+        process_sensor_data(&config.server);
+        thread::sleep(Duration::from_secs(config.interval_secs));
+    }
+}
+
+/// Collects sensor data and sends it to the server.
+fn process_sensor_data(server: &str) {
+    match sensor::collect_sensor_data() {
+        Some(sensor_data) => {
+            if let Err(e) = network::send_data_to_server(&sensor_data, server) {
                 error!("Error sending data to server: {}", e);
             } else {
                 info!("Sensor data sent successfully.");
             }
-        } else {
-            error!("Failed to collect sensor data.");
         }
-
-        thread::sleep(Duration::from_secs(config.interval_secs));
+        None => error!("Failed to collect sensor data."),
     }
 }

@@ -3,36 +3,45 @@ use std::process::{Command, Stdio};
 
 /// Ensures the `lm-sensors` package is installed.
 pub fn ensure_sensors_installed() -> io::Result<()> {
-    let check_output = Command::new("which")
-        .arg("sensors")
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()?;
-
-    if !check_output.status.success() {
+    if !is_command_available("sensors")? {
         eprintln!("`sensors` command not found. Attempting to install...");
 
-        let install_output = Command::new("sudo")
-            .arg("apt-get")
-            .arg("install")
-            .arg("-y")
-            .arg("lm-sensors")
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .output()?;
-
-        if !install_output.status.success() {
-            let err_msg = String::from_utf8_lossy(&install_output.stderr);
+        if install_lm_sensors()? {
+            eprintln!("`lm-sensors` successfully installed.");
+        } else {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
-                format!("Failed to install `lm-sensors`: {}", err_msg),
+                "`lm-sensors` installation failed.",
             ));
         }
-
-        eprintln!("`lm-sensors` successfully installed.");
     } else {
         eprintln!("`sensors` command is already installed.");
     }
 
     Ok(())
+}
+
+/// Checks if a command is available in the system.
+fn is_command_available(command: &str) -> io::Result<bool> {
+    let status = Command::new("which")
+        .arg(command)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()?;
+
+    Ok(status.success())
+}
+
+/// Installs the `lm-sensors` package using `apt-get`.
+fn install_lm_sensors() -> io::Result<bool> {
+    let status = Command::new("sudo")
+        .arg("apt-get")
+        .arg("install")
+        .arg("-y")
+        .arg("lm-sensors")
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status()?;
+
+    Ok(status.success())
 }

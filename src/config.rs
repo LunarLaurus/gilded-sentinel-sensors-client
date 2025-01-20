@@ -3,6 +3,7 @@ use log::{debug, error, info, warn};
 use serde::Deserialize;
 use std::env;
 use std::fs;
+use std::path::Path;
 
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
@@ -10,100 +11,139 @@ pub struct AppConfig {
     pub interval_secs: u64,
 }
 
-// Default configuration constants
-const DEFAULT_SERVER: &str = "127.0.0.1:5000";
-const DEFAULT_INTERVAL_SECS: u64 = 10;
-
-/// Load configuration from command-line arguments, configuration file, or environment variables.
-pub fn load_config() -> AppConfig {
-    info!("Starting configuration loading process.");
-
-    // Step 1: Parse command-line arguments using `clap`
-    let matches = Command::new("Gilded-Sentinel-Debian")
-        .version("0.1.0")
-        .author("LunarLaurus")
-        .about("Collects and sends sensor data")
-        .arg(
-            Arg::new("server")
-                .long("server")
-                .help("Server address (e.g., 127.0.0.1:5000)")
-                .value_parser(clap::value_parser!(String)),
-        )
-        .arg(
-            Arg::new("interval")
-                .long("interval")
-                .help("Interval in seconds between data collection")
-                .value_parser(clap::value_parser!(u64)),
-        )
-        .arg(
-            Arg::new("config")
-                .long("config")
-                .help("Path to the configuration file")
-                .value_parser(clap::value_parser!(String)),
-        )
-        .get_matches();
-
-    debug!("Command-line arguments parsed successfully.");
-
-    // Step 2: Load configuration from file if provided
-    let file_config = matches
-        .get_one::<String>("config")
-        .map(|path| {
-            info!("Loading configuration from file: {}", path);
-            load_config_from_file(path)
-        })
-        .unwrap_or_else(|| {
-            warn!("No configuration file provided; using default values.");
-            AppConfig {
-                server: String::from(DEFAULT_SERVER),
-                interval_secs: DEFAULT_INTERVAL_SECS,
-            }
-        });
-
-    // Step 3: Override with environment variables if set
-    let env_server = env::var("SENSOR_SERVER").unwrap_or_else(|_| file_config.server.clone());
-    if env::var("SENSOR_SERVER").is_ok() {
-        info!("Server address overridden by environment variable.");
-    }
-
-    let env_interval = env::var("SENSOR_INTERVAL")
-        .ok()
-        .and_then(|val| val.parse::<u64>().ok())
-        .unwrap_or(file_config.interval_secs);
-    if env::var("SENSOR_INTERVAL").is_ok() {
-        info!("Interval overridden by environment variable.");
-    }
-
-    // Step 4: Override with command-line arguments if provided
-    let server = matches
-        .get_one::<String>("server")
-        .unwrap_or(&env_server)
-        .to_string();
-    let interval_secs = matches
-        .get_one::<u64>("interval")
-        .copied()
-        .unwrap_or(env_interval);
-
-    info!(
-        "Final configuration: server = {}, interval_secs = {}",
-        server, interval_secs
-    );
-
-    AppConfig {
-        server,
-        interval_secs,
+impl Default for AppConfig {
+    fn default() -> Self {
+        Self {
+            server: "127.0.0.1:5000".to_string(),
+            interval_secs: 10,
+        }
     }
 }
 
-/// Load configuration from a TOML file.
-fn load_config_from_file(path: &str) -> AppConfig {
-    let contents = fs::read_to_string(path).unwrap_or_else(|e| {
-        error!("Failed to read configuration file at {}: {}", path, e);
-        panic!("Failed to read configuration file.");
-    });
+pub struct ConfigLoader {
+    exe_dir: String,
+}
 
-    toml::from_str(&contents).unwrap_or_else(|e| {
-        error!("Failed to parse configuration file at {}: {}", path, e);
-        panic!("Failed to parse configuration file.");
-    })
+impl ConfigLoader {
+    /// Creates a new ConfigLoader with the executable's directory.
+    pub fn new() -> Self {
+        let exe_dir = env::current_exe()
+            .ok()
+            .and_then(|path| path.parent().map(|p| p.to_string_lossy().to_string()))
+            .unwrap_or_else(|| ".".to_string());
+
+        Self { exe_dir }
+    }
+
+    /// Load the final application configuration.
+    pub fn load_config(&self) -> AppConfig {
+        info!("Starting configuration loading process.");
+
+        // Step 1: Load configuration from file
+        let file_config = self.load_from_file().unwrap_or_else(|| {
+            warn!("No configuration file found; using default values.");
+            AppConfig::default()
+        });
+
+        // Step 2: Override with environment variables
+        let env_config = self.override_with_env(file_config);
+
+        // Step 3: Override with command-line arguments
+        let final_config = self.override_with_cli(env_config);
+
+        info!(
+            "Final configuration: server = {}, interval_secs = {}",
+            final_config.server, final_config.interval_secs
+        );
+
+        final_config
+    }
+
+    /// Loads configuration from `config.toml` in the local directory.
+    fn load_from_file(&self) -> Option<AppConfig> {
+        let config_path = Path::new(&self.exe_dir).join("config.toml");
+
+        if config_path.exists() {
+            info!("Found configuration file at: {}", config_path.display());
+            match fs::read_to_string(&config_path) {
+                Ok(contents) => match toml::from_str(&contents) {
+                    Ok(config) => Some(config),
+                    Err(e) => {
+                        error!("Failed to parse configuration file: {}", e);
+                        None
+                    }
+                },
+                Err(e) => {
+                    error!("Failed to read configuration file: {}", e);
+                    None
+                }
+            }
+        } else {
+            warn!("No configuration file found in: {}", self.exe_dir);
+            None
+        }
+    }
+
+    /// Overrides configuration with environment variables if set.
+    fn override_with_env(&self, config: AppConfig) -> AppConfig {
+        let server = env::var("SENSOR_SERVER").unwrap_or_else(|_| config.server.clone());
+        let interval_secs = env::var("SENSOR_INTERVAL")
+            .ok()
+            .and_then(|val| val.parse().ok())
+            .unwrap_or(config.interval_secs);
+
+        if server != config.server {
+            info!("Server address overridden by environment variable.");
+        }
+        if interval_secs != config.interval_secs {
+            info!("Interval overridden by environment variable.");
+        }
+
+        AppConfig {
+            server,
+            interval_secs,
+        }
+    }
+
+    /// Overrides configuration with command-line arguments if provided.
+    fn override_with_cli(&self, config: AppConfig) -> AppConfig {
+        let matches = Command::new("Gilded-Sentinel-Debian")
+            .arg(
+                Arg::new("server")
+                    .long("server")
+                    .help("Server address (e.g., 127.0.0.1:5000)")
+                    .value_parser(clap::value_parser!(String)),
+            )
+            .arg(
+                Arg::new("interval")
+                    .long("interval")
+                    .help("Interval in seconds between data collection")
+                    .value_parser(clap::value_parser!(u64)),
+            )
+            .get_matches();
+
+        debug!("Command-line arguments parsed successfully.");
+
+        let server = matches
+            .get_one::<String>("server")
+            .unwrap_or(&config.server)
+            .to_string();
+
+        let interval_secs = matches
+            .get_one::<u64>("interval")
+            .copied()
+            .unwrap_or(config.interval_secs);
+
+        if server != config.server {
+            info!("Server address overridden by command-line argument.");
+        }
+        if interval_secs != config.interval_secs {
+            info!("Interval overridden by command-line argument.");
+        }
+
+        AppConfig {
+            server,
+            interval_secs,
+        }
+    }
 }

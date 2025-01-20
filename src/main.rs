@@ -2,8 +2,8 @@ mod config;
 mod network;
 mod sensor;
 
-use log::info;
 use log::error;
+use log::info;
 use std::thread;
 use std::time::Duration;
 
@@ -12,7 +12,7 @@ fn main() {
     info!("Starting the Gilded-Sentinel-Debian application...");
     if let Err(e) = sensor::ensure_sensors_installed() {
         error!("Error ensuring lm-sensors package is installed: {}", e);
-    }    
+    }
 
     let config = config::load_config();
 

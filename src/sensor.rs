@@ -1,9 +1,11 @@
 use std::io;
 use std::process::{Command, Stdio};
 
+mod mock;
+
 pub fn collect_sensor_data() -> String {
     if cfg!(target_os = "windows") {
-        get_mock_sensor_data()
+        mock::get_mock_sensor_data()
     } else {
         match execute_sensors_command() {
             Ok(data) => data,
@@ -13,10 +15,6 @@ pub fn collect_sensor_data() -> String {
             }
         }
     }
-}
-
-fn get_mock_sensor_data() -> String {
-    r#"Mocked sensor data for testing purposes"#.to_string()
 }
 
 fn execute_sensors_command() -> io::Result<String> {

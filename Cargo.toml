@@ -1,6 +1,6 @@
 [package]
 name = "Gilded-Sentinel-Debian"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 description = "A system monitoring and reporting tool for Debian-based systems."
 authors = ["LunarLaurus"]

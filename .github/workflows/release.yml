@@ -14,37 +14,17 @@ jobs:
       ${{ github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main' }}
 
-    strategy:
-      matrix:
-        target:
-          - x86_64-unknown-linux-gnu
-          - aarch64-unknown-linux-gnu
-          - armv7-unknown-linux-gnueabihf
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
 
     steps:
       # Checkout the code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Set up Rust
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-
-      # Add target
-      - name: Add Target
-        run: rustup target add ${{ matrix.target }}
-
-      # Build the executable
-      - name: Build Executable
-        run: cargo build --release --target ${{ matrix.target }}
-
       # Create a new release
       - name: Create Release
-        id: create_release  # Add an ID for this step
+        id: create_release
         uses: actions/create-release@v1
         with:
           tag_name: "v${{ github.run_number }}"
@@ -53,11 +33,115 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Upload executable to the release
+  build-x86_64:
+    name: Build x86_64 Executable
+    runs-on: ubuntu-latest
+    needs: create-release
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Add x86_64 Target
+        run: rustup target add x86_64-unknown-linux-gnu
+
+      - name: Build Executable
+        run: cargo build --release --target x86_64-unknown-linux-gnu
+
       - name: Upload Executable
         uses: actions/upload-release-asset@v1
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./target/${{ matrix.target }}/release/${{ github.event.repository.name }}
-          asset_name: ${{ github.event.repository.name }}_${{ matrix.target }}
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./target/x86_64-unknown-linux-gnu/release/Gilded-Sentinel-Debian
+          asset_name: Gilded-Sentinel-Debian_x86_64-unknown-linux-gnu
           asset_content_type: application/octet-stream
+
+  build-aarch64:
+    name: Build aarch64 Executable
+    runs-on: ubuntu-latest
+    needs: create-release
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Add aarch64 Target
+        run: rustup target add aarch64-unknown-linux-gnu
+
+      - name: Build Executable
+        run: cargo build --release --target aarch64-unknown-linux-gnu
+
+      - name: Upload Executable
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./target/aarch64-unknown-linux-gnu/release/Gilded-Sentinel-Debian
+          asset_name: Gilded-Sentinel-Debian_aarch64-unknown-linux-gnu
+          asset_content_type: application/octet-stream
+
+  build-armv7:
+    name: Build armv7 Executable
+    runs-on: ubuntu-latest
+    needs: create-release
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Add armv7 Target
+        run: rustup target add armv7-unknown-linux-gnueabihf
+
+      - name: Build Executable
+        run: cargo build --release --target armv7-unknown-linux-gnueabihf
+
+      - name: Upload Executable
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./target/armv7-unknown-linux-gnueabihf/release/Gilded-Sentinel-Debian
+          asset_name: Gilded-Sentinel-Debian_armv7-unknown-linux-gnueabihf
+          asset_content_type: application/octet-stream
+
+  bump-version:
+    name: Bump Version
+    runs-on: ubuntu-latest
+    needs: [build-x86_64, build-aarch64, build-armv7]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump Version
+        run: |
+          version=$(cargo metadata --format-version 1 | jq -r '.packages[0].version')
+          new_version=$(echo $version | awk -F. -v OFS=. '{$NF++; print}')
+          sed -i "s/version = \"$version\"/version = \"$new_version\"/" Cargo.toml
+          git add Cargo.toml
+          git commit -m "Bump version to $new_version"
+          git push origin main

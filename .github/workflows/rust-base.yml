@@ -31,9 +31,11 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
 
-      # Add Clippy Component
-      - name: Add Clippy
-        run: rustup component add clippy --toolchain ${{ matrix.rust }}
+      # Add Required Components
+      - name: Add Rustfmt and Clippy
+        run: |
+          rustup component add rustfmt --toolchain ${{ matrix.rust }}
+          rustup component add clippy --toolchain ${{ matrix.rust }}
 
       # Cache Cargo
       - name: Cache Cargo

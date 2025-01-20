@@ -1,7 +1,8 @@
-use clap::{App, Arg};
+use clap::{Arg, Command};
+use log::{debug, error, info, warn};
 use serde::Deserialize;
-use std::fs;
 use std::env;
+use std::fs;
 
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
@@ -11,65 +12,89 @@ pub struct AppConfig {
 
 // Default configuration constants
 const DEFAULT_SERVER: &str = "127.0.0.1:5000";
-const DEFAULT_INTERVAL_SECS: u64 = 5;
+const DEFAULT_INTERVAL_SECS: u64 = 10;
 
 /// Load configuration from command-line arguments, configuration file, or environment variables.
 pub fn load_config() -> AppConfig {
+    info!("Starting configuration loading process.");
+
     // Step 1: Parse command-line arguments using `clap`
-    let matches = App::new("Sensor App")
-        .version("1.0")
-        .author("Your Name <your.email@example.com>")
+    let matches = Command::new("Gilded-Sentinel-Debian")
+        .version("0.1.0")
+        .author("LunarLaurus")
         .about("Collects and sends sensor data")
         .arg(
-            Arg::with_name("server")
+            Arg::new("server")
                 .long("server")
                 .help("Server address (e.g., 127.0.0.1:5000)")
-                .takes_value(true),
+                .value_parser(clap::value_parser!(String)),
         )
         .arg(
-            Arg::with_name("interval")
+            Arg::new("interval")
                 .long("interval")
                 .help("Interval in seconds between data collection")
-                .takes_value(true),
+                .value_parser(clap::value_parser!(u64)),
         )
         .arg(
-            Arg::with_name("config")
+            Arg::new("config")
                 .long("config")
                 .help("Path to the configuration file")
-                .takes_value(true),
+                .value_parser(clap::value_parser!(String)),
         )
         .get_matches();
 
+    debug!("Command-line arguments parsed successfully.");
+
     // Step 2: Load configuration from file if provided
     let file_config = matches
-        .value_of("config")
-        .map(|path| load_config_from_file(path))
-        .unwrap_or_else(|| AppConfig {
-            server: String::from(DEFAULT_SERVER),
-            interval_secs: DEFAULT_INTERVAL_SECS,
+        .get_one::<String>("config")
+        .map(|path| {
+            info!("Loading configuration from file: {}", path);
+            load_config_from_file(path)
+        })
+        .unwrap_or_else(|| {
+            warn!("No configuration file provided; using default values.");
+            AppConfig {
+                server: String::from(DEFAULT_SERVER),
+                interval_secs: DEFAULT_INTERVAL_SECS,
+            }
         });
 
     // Step 3: Override with environment variables if set
     let env_server = env::var("SENSOR_SERVER").unwrap_or_else(|_| file_config.server.clone());
+    if env::var("SENSOR_SERVER").is_ok() {
+        info!("Server address overridden by environment variable.");
+    }
+
     let env_interval = env::var("SENSOR_INTERVAL")
         .ok()
         .and_then(|val| val.parse::<u64>().ok())
         .unwrap_or(file_config.interval_secs);
+    if env::var("SENSOR_INTERVAL").is_ok() {
+        info!("Interval overridden by environment variable.");
+    }
 
     // Step 4: Override with command-line arguments if provided
-    let server = matches.value_of("server").unwrap_or(&env_server).to_string();
+    let server = matches.get_one::<String>("server").unwrap_or(&env_server).to_string();
     let interval_secs = matches
-        .value_of("interval")
-        .and_then(|val| val.parse::<u64>().ok())
+        .get_one::<u64>("interval")
+        .copied()
         .unwrap_or(env_interval);
+
+    info!("Final configuration: server = {}, interval_secs = {}", server, interval_secs);
 
     AppConfig { server, interval_secs }
 }
 
 /// Load configuration from a TOML file.
 fn load_config_from_file(path: &str) -> AppConfig {
-    let contents = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("Failed to read configuration file at {}", path));
-    toml::from_str(&contents)
-        .unwrap_or_else(|_| panic!("Failed to parse configuration file at {}", path))
+    let contents = fs::read_to_string(path).unwrap_or_else(|e| {
+        error!("Failed to read configuration file at {}: {}", path, e);
+        panic!("Failed to read configuration file.");
+    });
+
+    toml::from_str(&contents).unwrap_or_else(|e| {
+        error!("Failed to parse configuration file at {}: {}", path, e);
+        panic!("Failed to parse configuration file.");
+    })
 }

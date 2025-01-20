@@ -4,14 +4,18 @@ mod network;
 
 use std::thread;
 use std::time::Duration;
+use log::info;
 
 fn main() {
-    // Load configuration
+    
+    env_logger::init(); // Initialize the logger
+    info!("Starting the Gilded-Sentinel-Debian application...");
+
     let config = config::load_config();
 
-    println!(
-        "Reading sensor data every {} seconds and sending to {}...",
-        config.interval_secs, config.server
+    info!(
+        "Application running with configuration: server = {}, interval_secs = {}",
+        config.server, config.interval_secs
     );
 
     // Main loop for data collection and transmission

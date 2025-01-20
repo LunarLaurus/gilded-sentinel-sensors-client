@@ -44,10 +44,13 @@ fn is_command_available(command: &str) -> io::Result<bool> {
 
 /// Installs the `lm-sensors` package using `apt-get`. Avoids using `sudo` if already running as root.
 fn install_lm_sensors() -> io::Result<bool> {
-    let mut command = Command::new("apt-get");
-    if !is_running_as_root() {
-        command.arg("sudo");
-    }
+    let mut command = if is_running_as_root() {
+        Command::new("apt-get")
+    } else {
+        let mut cmd = Command::new("sudo");
+        cmd.arg("apt-get");
+        cmd
+    };
     let status = command
         .arg("install")
         .arg("-y")
@@ -61,19 +64,18 @@ fn install_lm_sensors() -> io::Result<bool> {
 
 /// Checks if the user has sudo access.
 fn has_sudo_access() -> io::Result<bool> {
-    let status = Command::new("sudo")
+    match Command::new("sudo")
         .arg("-n") // Do not prompt for a password
         .arg("true")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .status();
-
-    match status {
+        .status()
+    {
         Ok(status) => Ok(status.success()),
-        Err(e) => {
-            eprintln!("Failed to check sudo access: {}", e);
-            Ok(false)
-        }
+        Err(e) => Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!("Failed to check sudo access: {}", e),
+        )),
     }
 }
 
@@ -83,8 +85,9 @@ fn is_running_as_root() -> bool {
     unsafe { geteuid() == 0 }
 }
 
-/// Only exists for local dev.
+/// Mocked root check for Windows development builds.
 #[cfg(windows)]
 fn is_running_as_root() -> bool {
-    return true;
+    // Always return true for local development. This ensures Unix-specific logic is not accidentally skipped during testing.
+    true
 }

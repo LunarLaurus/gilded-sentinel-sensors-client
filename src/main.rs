@@ -16,7 +16,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Starting the Gilded-Sentinel-Debian application...");
 
     let running = setup_signal_handler()?;
-
     ensure_lm_sensors_installed()?;
 
     let config = load_application_config();
@@ -26,8 +25,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     run_main_loop(&running, &config);
-
-    info!("Shutting down gracefully...");
+    info!("Shutting down gracefully.");
     Ok(())
 }
 
@@ -42,12 +40,13 @@ fn initialize_logger() {
 fn setup_signal_handler() -> Result<Arc<AtomicBool>, Box<dyn std::error::Error>> {
     let running = Arc::new(AtomicBool::new(true));
     let r = Arc::clone(&running);
-    // Register the signal handler in an unsafe block
+
     unsafe {
         register(SIGINT, move || {
             r.store(false, Ordering::Relaxed);
         })?;
     }
+
     Ok(running)
 }
 
@@ -67,21 +66,33 @@ fn load_application_config() -> config::AppConfig {
 
 /// Runs the main loop for data collection and transmission.
 fn run_main_loop(running: &Arc<AtomicBool>, config: &config::AppConfig) {
+    info!("Entering the main loop.");
     while running.load(Ordering::Relaxed) {
         process_sensor_data(&config.server);
         thread::sleep(Duration::from_secs(config.interval_secs));
     }
+    info!("Exiting the main loop.");
 }
 
 /// Collects sensor data and sends it to the server.
 fn process_sensor_data(server: &str) {
     match sensor::collect_sensor_data() {
         Some(sensor_data) => {
-            if let Err(e) = network::send_data_to_server(&sensor_data, server) {
-                error!("Error sending data to server: {}", e);
-            } else {
-                info!("Sensor data sent successfully.");
+            let mut retries = 3;
+            while retries > 0 {
+                match network::send_data_to_server(&sensor_data, server) {
+                    Ok(_) => {
+                        info!("Sensor data sent successfully.");
+                        return;
+                    }
+                    Err(e) => {
+                        error!("Error sending data to server: {}. Retries left: {}", e, retries - 1);
+                        retries -= 1;
+                        thread::sleep(Duration::from_secs(2));
+                    }
+                }
             }
+            error!("Failed to send sensor data after multiple retries.");
         }
         None => error!("Failed to collect sensor data."),
     }

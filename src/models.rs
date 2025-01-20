@@ -11,11 +11,14 @@ pub struct CpuCoreData {
 #[derive(Serialize, Debug)]
 pub struct CpuPackageData {
     pub package_id: String,
+    pub adapter_name: String,
+    pub package_temperature: f32,
+    pub high_threshold: f32,
+    pub critical_threshold: f32,
     pub cores: Vec<CpuCoreData>,
 }
 
 #[derive(Serialize, Debug)]
 pub struct SensorData {
-    pub cpu_packages: Vec<CpuPackageData>,
-    pub other_sensors: Vec<String>, // For sensors we don't specifically parse
+    pub cpu_packages: Vec<CpuPackageData>
 }

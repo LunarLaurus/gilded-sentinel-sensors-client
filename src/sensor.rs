@@ -1,4 +1,4 @@
-use crate::models::{CpuPackageData, SensorData};
+use crate::models::{CpuCoreData, CpuPackageData, SensorData};
 use std::io;
 use std::process::{Command, Stdio};
 
@@ -34,28 +34,47 @@ fn execute_sensors_command() -> io::Result<String> {
 /// Parses the output from `sensors` into structured data.
 fn parse_sensor_data(raw_data: &str) -> SensorData {
     let mut cpu_packages = Vec::new();
-    let mut other_sensors = Vec::new();
     let mut current_package: Option<CpuPackageData> = None;
 
     for line in raw_data.lines() {
-        if line.contains("Package id") {
+        if line.contains("coretemp-") {
             if let Some(package) = current_package.take() {
                 cpu_packages.push(package);
             }
-            let package_id = line
-                .split_whitespace()
-                .nth(2)
-                .unwrap_or("Unknown")
-                .to_string();
+            let adapter_name = line.split_whitespace().next().unwrap_or("Unknown").to_string();
             current_package = Some(CpuPackageData {
-                package_id,
+                package_id: String::new(), // Placeholder until "Package id" is encountered
+                adapter_name,
+                package_temperature: 0.0, // Placeholder until "Package id" line
+                high_threshold: 0.0,
+                critical_threshold: 0.0,
                 cores: Vec::new(),
             });
+        } else if line.contains("Package id") {
+            if let Some(ref mut package) = current_package {
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                package.package_id = parts[2].to_string();
+                package.package_temperature = parts[3]
+                    .trim_start_matches('+')
+                    .trim_end_matches("°C")
+                    .parse()
+                    .unwrap_or(0.0);
+                package.high_threshold = parts[6]
+                    .trim_start_matches('+')
+                    .trim_end_matches("°C")
+                    .parse()
+                    .unwrap_or(0.0);
+                package.critical_threshold = parts[9]
+                    .trim_start_matches('+')
+                    .trim_end_matches("°C")
+                    .parse()
+                    .unwrap_or(0.0);
+            }
         } else if line.contains("Core") {
             if let Some(ref mut package) = current_package {
                 let parts: Vec<&str> = line.split_whitespace().collect();
                 if parts.len() >= 6 {
-                    let core_data = crate::models::CpuCoreData {
+                    let core_data = CpuCoreData {
                         core_name: parts[0].to_string(),
                         temperature: parts[1]
                             .trim_start_matches('+')
@@ -76,8 +95,6 @@ fn parse_sensor_data(raw_data: &str) -> SensorData {
                     package.cores.push(core_data);
                 }
             }
-        } else if !line.trim().is_empty() {
-            other_sensors.push(line.to_string());
         }
     }
 
@@ -87,6 +104,5 @@ fn parse_sensor_data(raw_data: &str) -> SensorData {
 
     SensorData {
         cpu_packages,
-        other_sensors,
     }
 }

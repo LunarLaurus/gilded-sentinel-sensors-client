@@ -16,14 +16,26 @@ jobs:
 
     strategy:
       matrix:
-        rust: [stable, beta, nightly] # Test against multiple Rust versions
+        rust: [stable, beta, nightly]
 
     steps:
       # Checkout the code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Cache Cargo dependencies
+      # Set up Rust toolchain
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+
+      # Add Clippy Component
+      - name: Add Clippy
+        run: rustup component add clippy --toolchain ${{ matrix.rust }}
+
+      # Cache Cargo
       - name: Cache Cargo
         uses: actions/cache@v3
         with:
@@ -35,26 +47,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      # Install Rust
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          override: true
-
       # Build the project
       - name: Build
         run: cargo build --verbose
 
-      # Run tests
+      # Run Tests
       - name: Run Tests
         run: cargo test --verbose
 
-      # Run linting
+      # Run Clippy
       - name: Run Clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
 
-      # Run formatting check
+      # Run Formatting Check
       - name: Check Formatting
         run: cargo fmt --all -- --check

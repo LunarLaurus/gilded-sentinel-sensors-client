@@ -2,13 +2,21 @@ use crate::models::{CpuCoreData, CpuPackageData, SensorData};
 use std::io;
 use std::process::{Command, Stdio};
 
+mod mock;
+
 /// Collects sensor data.
 pub fn collect_sensor_data() -> Option<SensorData> {
-    match execute_sensors_command() {
-        Ok(data) => Some(parse_sensor_data(&data)),
-        Err(e) => {
-            eprintln!("Error retrieving sensor data: {}", e);
-            None
+    if cfg!(target_os = "windows") {        
+        // Mock sensor data retrieval and parsing for Windows.
+        let mock_data = mock::get_mock_sensor_data();
+        Some(parse_sensor_data(&mock_data))
+    } else {
+        match execute_sensors_command() {
+            Ok(data) => Some(parse_sensor_data(&data)),
+            Err(e) => {
+                eprintln!("Error retrieving sensor data: {}", e);
+                None
+            }
         }
     }
 }
@@ -77,7 +85,11 @@ fn is_core_line(line: &str) -> bool {
 
 /// Parses an adapter line into a `CpuPackageData` placeholder.
 fn parse_adapter_line(line: &str) -> CpuPackageData {
-    let adapter_name = line.split_whitespace().next().unwrap_or("Unknown").to_string();
+    let adapter_name = line
+        .split_whitespace()
+        .next()
+        .unwrap_or("Unknown")
+        .to_string();
     CpuPackageData {
         package_id: String::new(),
         adapter_name,

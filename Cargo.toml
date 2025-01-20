@@ -2,10 +2,25 @@
 name = "Gilded-Sentinel-Debian"
 version = "0.1.1"
 edition = "2021"
+description = "A system monitoring and reporting tool for Debian-based systems."
+authors = ["LunarLaurus"]
+repository = "https://github.com/LunarLaurus/gilded-sentinel-sensors-client"
+keywords = ["monitoring", "debian", "system"]
+categories = ["system", "utilities"]
+
 
 [dependencies]
+# Argument parsing
 clap = { version = "4.0", features = ["derive"] }
+
+# Serialization
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 toml = "0.8"
+
+# Signal handling for graceful shutdowns
+signal-hook = "0.4"
+
+# Logging
 log = "0.4"
 env_logger = "0.11"

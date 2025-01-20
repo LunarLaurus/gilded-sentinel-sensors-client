@@ -1,8 +1,12 @@
 use std::io::{self, Write};
 use std::net::TcpStream;
+use serde_json;
+use crate::sensor::SensorData;
 
-pub fn send_data_to_server(data: &str, server: &str) -> io::Result<()> {
+/// Sends sensor data to the server.
+pub fn send_data_to_server(data: &SensorData, server: &str) -> io::Result<()> {
     let mut stream = TcpStream::connect(server)?;
-    stream.write_all(data.as_bytes())?;
+    let json_data = serde_json::to_string(data).expect("Failed to serialize sensor data");
+    stream.write_all(json_data.as_bytes())?;
     Ok(())
 }

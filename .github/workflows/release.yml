@@ -6,6 +6,11 @@ on:
     types:
       - completed
 
+permissions:
+  contents: write # Required for committing changes (bump version)
+  actions: read   # Default permission for workflows
+  deployments: write # Required for creating releases
+
 jobs:
   create-release:
     name: Create Release
@@ -18,11 +23,9 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
 
     steps:
-      # Checkout the code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Create a new release
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -62,6 +65,8 @@ jobs:
           asset_path: ./target/x86_64-unknown-linux-gnu/release/Gilded-Sentinel-Debian
           asset_name: Gilded-Sentinel-Debian_x86_64-unknown-linux-gnu
           asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-aarch64:
     name: Build aarch64 Executable
@@ -92,6 +97,8 @@ jobs:
           asset_path: ./target/aarch64-unknown-linux-gnu/release/Gilded-Sentinel-Debian
           asset_name: Gilded-Sentinel-Debian_aarch64-unknown-linux-gnu
           asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-armv7:
     name: Build armv7 Executable
@@ -122,6 +129,8 @@ jobs:
           asset_path: ./target/armv7-unknown-linux-gnueabihf/release/Gilded-Sentinel-Debian
           asset_name: Gilded-Sentinel-Debian_armv7-unknown-linux-gnueabihf
           asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   bump-version:
     name: Bump Version
@@ -143,5 +152,5 @@ jobs:
           new_version=$(echo $version | awk -F. -v OFS=. '{$NF++; print}')
           sed -i "s/version = \"$version\"/version = \"$new_version\"/" Cargo.toml
           git add Cargo.toml
-          git commit -m "Bump version to $new_version"
-          git push origin main
+          git commit -m "Bump version to $new_version" || echo "No changes to commit"
+          git push origin main || echo "Nothing to push"

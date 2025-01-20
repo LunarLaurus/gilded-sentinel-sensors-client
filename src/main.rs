@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Err(e) = sensor::ensure_sensors_installed() {
         error!("Error ensuring lm-sensors package is installed: {}", e);
-        return Err(e.into());
+        return Err(e.into());0c2a8e34db7e53ed06a5613092a2222fb7cd9e6
     }
 
     let config = config::load_config();

@@ -5,6 +5,7 @@ use std::process::{Command, Stdio};
 use libc::geteuid;
 
 /// Ensures the `lm-sensors` package is installed and checks for sudo access if required.
+#[cfg(unix)]
 pub fn ensure_sensors_installed() -> io::Result<()> {
     if !is_command_available("sensors")? {
         eprintln!("`sensors` command not found. Attempting to install...");
@@ -28,6 +29,12 @@ pub fn ensure_sensors_installed() -> io::Result<()> {
         eprintln!("`sensors` command is already installed.");
     }
 
+    Ok(())
+}
+
+/// Mocked root check for Windows development builds.
+#[cfg(windows)]
+pub fn ensure_sensors_installed() -> io::Result<()> {
     Ok(())
 }
 

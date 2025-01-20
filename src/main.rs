@@ -47,7 +47,10 @@ fn setup_signal_handler() -> Result<Arc<AtomicBool>, Box<dyn std::error::Error>>
 }
 
 /// Handles initialization errors, logging the message and returning an error.
-fn handle_initialization_error(message: &str, error: impl std::error::Error) -> Result<(), Box<dyn std::error::Error>> {
+fn handle_initialization_error(
+    message: &str,
+    error: impl std::error::Error,
+) -> Result<(), Box<dyn std::error::Error>> {
     error!("{}: {}", message, error);
     Err(Box::new(error))
 }

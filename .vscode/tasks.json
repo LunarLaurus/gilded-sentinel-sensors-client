@@ -1,0 +1,33 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build All (Windows)",
+            "type": "shell",
+            "command": "${workspaceFolder}/build.bat",
+            "problemMatcher": ["$rustc"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": ["/c"]
+                }
+            },
+            "windows": {}
+        },
+        {
+            "label": "Build All (Linux)",
+            "type": "shell",
+            "command": "${workspaceFolder}/build.sh",
+            "problemMatcher": ["$rustc"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "linux": {}
+        }
+    ]
+}

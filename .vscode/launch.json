@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Rust (Windows)",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/x86_64-pc-windows-msvc/debug/Gilded-Sentinel-Debian.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false,
+            "preLaunchTask": "Build All (Windows)"
+        },
+        {
+            "name": "Debug Rust (Linux/Debian)",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/debug/Gilded-Sentinel-Debian",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false,
+            "preLaunchTask": "Build All (Linux)"
+        }
+    ]
+}

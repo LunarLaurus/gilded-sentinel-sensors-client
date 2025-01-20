@@ -1,6 +1,5 @@
 use crate::models::SensorData;
 use log::{error, info};
-use serde_json;
 use std::io::{self, Write};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;

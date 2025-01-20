@@ -1,8 +1,8 @@
 mod config;
+mod installer;
+mod models;
 mod network;
 mod sensor;
-mod models;
-mod installer;
 
 use config::ConfigLoader;
 use log::{error, info};
@@ -88,7 +88,11 @@ fn process_sensor_data(server: &str) {
                         return;
                     }
                     Err(e) => {
-                        error!("Error sending data to server: {}. Retries left: {}", e, retries - 1);
+                        error!(
+                            "Error sending data to server: {}. Retries left: {}",
+                            e,
+                            retries - 1
+                        );
                         retries -= 1;
                         thread::sleep(Duration::from_secs(2));
                     }

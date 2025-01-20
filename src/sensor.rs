@@ -1,6 +1,6 @@
+use crate::models::{CpuPackageData, SensorData};
 use std::io;
 use std::process::{Command, Stdio};
-use crate::models::{CpuPackageData, SensorData};
 
 /// Collects sensor data.
 pub fn collect_sensor_data() -> Option<SensorData> {

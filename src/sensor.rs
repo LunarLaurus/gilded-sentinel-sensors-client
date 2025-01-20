@@ -1,6 +1,6 @@
+use serde::Serialize;
 use std::io;
 use std::process::{Command, Stdio};
-use serde::Serialize;
 
 #[derive(Serialize, Debug)]
 pub struct CpuCoreData {
@@ -129,7 +129,7 @@ fn parse_sensor_data(raw_data: &str) -> SensorData {
                             .parse()
                             .unwrap_or(0.0),
                     };
-                    
+
                     package.cores.push(core_data);
                 }
             }

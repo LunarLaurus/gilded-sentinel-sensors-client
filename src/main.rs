@@ -2,11 +2,11 @@ mod config;
 mod network;
 mod sensor;
 
-use log::{info, error};
-use std::{thread, time::Duration};
+use log::{error, info};
 use signal_hook::flag;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::{thread, time::Duration};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize the logger with default INFO level.
@@ -23,7 +23,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if let Err(e) = sensor::ensure_sensors_installed() {
         error!("Error ensuring lm-sensors package is installed: {}", e);
-        return Err(e.into());0c2a8e34db7e53ed06a5613092a2222fb7cd9e6
+        return Err(e.into());
+        0c2a8e34db7e53ed06a5613092a2222fb7cd9e6
     }
 
     let config = config::load_config();

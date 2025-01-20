@@ -1,7 +1,7 @@
+use crate::sensor::SensorData;
+use serde_json;
 use std::io::{self, Write};
 use std::net::TcpStream;
-use serde_json;
-use crate::sensor::SensorData;
 
 /// Sends sensor data to the server.
 pub fn send_data_to_server(data: &SensorData, server: &str) -> io::Result<()> {

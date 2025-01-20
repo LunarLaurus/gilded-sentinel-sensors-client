@@ -37,63 +37,18 @@ fn parse_sensor_data(raw_data: &str) -> SensorData {
     let mut current_package: Option<CpuPackageData> = None;
 
     for line in raw_data.lines() {
-        if line.contains("coretemp-") {
+        if is_adapter_line(line) {
             if let Some(package) = current_package.take() {
                 cpu_packages.push(package);
             }
-            let adapter_name = line.split_whitespace().next().unwrap_or("Unknown").to_string();
-            current_package = Some(CpuPackageData {
-                package_id: String::new(), // Placeholder until "Package id" is encountered
-                adapter_name,
-                package_temperature: 0.0, // Placeholder until "Package id" line
-                high_threshold: 0.0,
-                critical_threshold: 0.0,
-                cores: Vec::new(),
-            });
-        } else if line.contains("Package id") {
+            current_package = Some(parse_adapter_line(line));
+        } else if is_package_line(line) {
             if let Some(ref mut package) = current_package {
-                let parts: Vec<&str> = line.split_whitespace().collect();
-                package.package_id = parts[2].to_string();
-                package.package_temperature = parts[3]
-                    .trim_start_matches('+')
-                    .trim_end_matches("°C")
-                    .parse()
-                    .unwrap_or(0.0);
-                package.high_threshold = parts[6]
-                    .trim_start_matches('+')
-                    .trim_end_matches("°C")
-                    .parse()
-                    .unwrap_or(0.0);
-                package.critical_threshold = parts[9]
-                    .trim_start_matches('+')
-                    .trim_end_matches("°C")
-                    .parse()
-                    .unwrap_or(0.0);
+                parse_package_line(line, package);
             }
-        } else if line.contains("Core") {
+        } else if is_core_line(line) {
             if let Some(ref mut package) = current_package {
-                let parts: Vec<&str> = line.split_whitespace().collect();
-                if parts.len() >= 6 {
-                    let core_data = CpuCoreData {
-                        core_name: parts[0].to_string(),
-                        temperature: parts[1]
-                            .trim_start_matches('+')
-                            .trim_end_matches("°C")
-                            .parse()
-                            .unwrap_or(0.0),
-                        high_threshold: parts[4]
-                            .trim_start_matches('+')
-                            .trim_end_matches("°C")
-                            .parse()
-                            .unwrap_or(0.0),
-                        critical_threshold: parts[5]
-                            .trim_start_matches('+')
-                            .trim_end_matches("°C")
-                            .parse()
-                            .unwrap_or(0.0),
-                    };
-                    package.cores.push(core_data);
-                }
+                parse_core_line(line, package);
             }
         }
     }
@@ -102,7 +57,82 @@ fn parse_sensor_data(raw_data: &str) -> SensorData {
         cpu_packages.push(package);
     }
 
-    SensorData {
-        cpu_packages,
+    SensorData { cpu_packages }
+}
+
+/// Checks if a line indicates an adapter.
+fn is_adapter_line(line: &str) -> bool {
+    line.contains("coretemp-")
+}
+
+/// Checks if a line indicates a package.
+fn is_package_line(line: &str) -> bool {
+    line.contains("Package id")
+}
+
+/// Checks if a line indicates a core.
+fn is_core_line(line: &str) -> bool {
+    line.contains("Core")
+}
+
+/// Parses an adapter line into a `CpuPackageData` placeholder.
+fn parse_adapter_line(line: &str) -> CpuPackageData {
+    let adapter_name = line.split_whitespace().next().unwrap_or("Unknown").to_string();
+    CpuPackageData {
+        package_id: String::new(),
+        adapter_name,
+        package_temperature: 0.0,
+        high_threshold: 0.0,
+        critical_threshold: 0.0,
+        cores: Vec::new(),
+    }
+}
+
+/// Parses a package line and updates the `CpuPackageData`.
+fn parse_package_line(line: &str, package: &mut CpuPackageData) {
+    let parts: Vec<&str> = line.split_whitespace().collect();
+    if parts.len() >= 10 {
+        package.package_id = parts[2].to_string();
+        package.package_temperature = parts[3]
+            .trim_start_matches('+')
+            .trim_end_matches("°C")
+            .parse()
+            .unwrap_or(0.0);
+        package.high_threshold = parts[6]
+            .trim_start_matches('+')
+            .trim_end_matches("°C")
+            .parse()
+            .unwrap_or(0.0);
+        package.critical_threshold = parts[9]
+            .trim_start_matches('+')
+            .trim_end_matches("°C")
+            .parse()
+            .unwrap_or(0.0);
+    }
+}
+
+/// Parses a core line and adds a `CpuCoreData` to the `CpuPackageData`.
+fn parse_core_line(line: &str, package: &mut CpuPackageData) {
+    let parts: Vec<&str> = line.split_whitespace().collect();
+    if parts.len() >= 6 {
+        let core_data = CpuCoreData {
+            core_name: parts[0].to_string(),
+            temperature: parts[1]
+                .trim_start_matches('+')
+                .trim_end_matches("°C")
+                .parse()
+                .unwrap_or(0.0),
+            high_threshold: parts[4]
+                .trim_start_matches('+')
+                .trim_end_matches("°C")
+                .parse()
+                .unwrap_or(0.0),
+            critical_threshold: parts[5]
+                .trim_start_matches('+')
+                .trim_end_matches("°C")
+                .parse()
+                .unwrap_or(0.0),
+        };
+        package.cores.push(core_data);
     }
 }

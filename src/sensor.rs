@@ -6,7 +6,7 @@ mod mock;
 
 /// Collects sensor data.
 pub fn collect_sensor_data() -> Option<SensorData> {
-    if cfg!(target_os = "windows") {        
+    if cfg!(target_os = "windows") {
         // Mock sensor data retrieval and parsing for Windows.
         let mock_data = mock::get_mock_sensor_data();
         Some(parse_sensor_data(&mock_data))

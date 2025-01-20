@@ -82,7 +82,7 @@ mod unix {
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .status()?;
-    
+
         Ok(status.success())
     }
 }

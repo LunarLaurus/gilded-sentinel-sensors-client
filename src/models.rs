@@ -20,5 +20,5 @@ pub struct CpuPackageData {
 
 #[derive(Serialize, Debug)]
 pub struct SensorData {
-    pub cpu_packages: Vec<CpuPackageData>
+    pub cpu_packages: Vec<CpuPackageData>,
 }

@@ -1,13 +1,12 @@
 mod config;
-mod sensor;
 mod network;
+mod sensor;
 
+use log::info;
 use std::thread;
 use std::time::Duration;
-use log::info;
 
 fn main() {
-    
     env_logger::init(); // Initialize the logger
     info!("Starting the Gilded-Sentinel-Debian application...");
 

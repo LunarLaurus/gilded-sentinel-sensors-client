@@ -75,15 +75,24 @@ pub fn load_config() -> AppConfig {
     }
 
     // Step 4: Override with command-line arguments if provided
-    let server = matches.get_one::<String>("server").unwrap_or(&env_server).to_string();
+    let server = matches
+        .get_one::<String>("server")
+        .unwrap_or(&env_server)
+        .to_string();
     let interval_secs = matches
         .get_one::<u64>("interval")
         .copied()
         .unwrap_or(env_interval);
 
-    info!("Final configuration: server = {}, interval_secs = {}", server, interval_secs);
+    info!(
+        "Final configuration: server = {}, interval_secs = {}",
+        server, interval_secs
+    );
 
-    AppConfig { server, interval_secs }
+    AppConfig {
+        server,
+        interval_secs,
+    }
 }
 
 /// Load configuration from a TOML file.

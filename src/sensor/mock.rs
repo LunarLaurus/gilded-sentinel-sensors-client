@@ -141,5 +141,6 @@ pub fn get_mock_sensor_data() -> String {
     power_meter-acpi-0
     Adapter: ACPI interface
     power1:      129.00 W  (interval = 300.00 s)
-    "#.to_string()
+    "#
+    .to_string()
 }

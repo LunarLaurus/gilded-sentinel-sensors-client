@@ -1,5 +1,7 @@
 use std::io;
 use std::process::{Command, Stdio};
+
+#[cfg(unix)]
 use libc::geteuid;
 
 /// Ensures the `lm-sensors` package is installed and checks for sudo access if required.
@@ -75,7 +77,14 @@ fn has_sudo_access() -> io::Result<bool> {
     }
 }
 
-/// Checks if the program is running as root.
+/// Checks if the program is running as root (Unix-specific).
+#[cfg(unix)]
 fn is_running_as_root() -> bool {
     unsafe { geteuid() == 0 }
+}
+
+/// Only exists for local dev.
+#[cfg(windows)]
+fn is_running_as_root() -> bool {
+    return true;
 }

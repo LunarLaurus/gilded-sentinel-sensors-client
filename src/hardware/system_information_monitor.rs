@@ -126,19 +126,18 @@ impl SysInfoMonitor {
     }
 
     /// Returns system details.
-    pub fn get_system_details(&mut self) -> (String, String, String, String, String) {
+    pub fn get_system_details(&mut self) -> (String, String, String, String) {
         self.refresh();
         self.system_info.system_details()
     }
 
     /// Logs system details.
     pub fn log_system_details(&mut self) {
-        let (os_name, os_version, kernel_version, hostname, cpu_arch) = self.get_system_details();
+        let (os_name, os_version, kernel_version, hostname) = self.get_system_details();
         info!("OS Name: {}", os_name);
         info!("OS Version: {}", os_version);
         info!("Kernel Version: {}", kernel_version);
         info!("Hostname: {}", hostname);
-        info!("CPU Architecture: {}", cpu_arch);
     }
 
     /// Returns system uptime.
@@ -199,6 +198,7 @@ impl SysInfoMonitor {
         self.log_uptime();
         self.log_memory_info();
         self.log_cpu_info();
+        self.log_components();
         info!("System monitoring setup complete.");
     }
 }

@@ -221,14 +221,13 @@ impl SystemInfo {
         Uptime::from_seconds(sysinfo::System::uptime())
     }
 
-    /// Retrieves system details such as OS name, version, kernel, hostname, and architecture.
-    pub fn system_details(&self) -> (String, String, String, String, String) {
+    /// Retrieves system details such as OS name, version, kernel, hostname.
+    pub fn system_details(&self) -> (String, String, String, String) {
         (
             sysinfo::System::name().unwrap_or_else(|| "<unknown>".to_string()),
             sysinfo::System::os_version().unwrap_or_else(|| "<unknown>".to_string()),
             sysinfo::System::kernel_version().unwrap_or_else(|| "<unknown>".to_string()),
-            sysinfo::System::host_name().unwrap_or_else(|| "<unknown>".to_string()),
-            sysinfo::System::cpu_arch(),
+            sysinfo::System::host_name().unwrap_or_else(|| "<unknown>".to_string())
         )
     }
 }

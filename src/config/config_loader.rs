@@ -1,11 +1,10 @@
 use clap::{Arg, Command};
 use log::{debug, error, info, warn};
-use serde::Deserialize;
 use std::env;
 use std::fs;
 use std::path::Path;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 pub struct AppConfig {
     pub server: String,
     pub interval_secs: u64,

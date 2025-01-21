@@ -1,20 +1,20 @@
 use std::fmt;
 
-use sysinfo::{Components, Disks, Networks, Pid, Signal, System, User, Users};
-
+use sysinfo::{Components, Disks, Networks, Pid, Signal, System, Users};
+#[derive(serde::Serialize)]
 pub struct MemoryInfo {
     pub total: u64,
     pub used: u64,
     pub total_swap: u64,
     pub used_swap: u64,
 }
-
+#[derive(serde::Serialize)]
 pub struct CpuInfo {
     pub usage_per_core: Vec<f32>,
     pub core_count: usize,
     pub cpu_arch: String, // Added CPU architecture
 }
-
+#[derive(serde::Serialize)]
 pub struct DiskInfo {
     pub name: String,
     pub total_space: u64,
@@ -22,14 +22,14 @@ pub struct DiskInfo {
     pub read_bytes: u64,
     pub written_bytes: u64,
 }
-
+#[derive(serde::Serialize)]
 pub struct NetworkInfo {
     pub interface_name: String,
     pub received: u64,
     pub transmitted: u64,
     pub mtu: Option<u64>,
 }
-
+#[derive(serde::Serialize)]
 pub struct ProcessInfo {
     pub name: String,
     pub pid: u32,
@@ -43,13 +43,13 @@ pub struct SystemInfo {
     components: Components,
     users: Users,
 }
-
+#[derive(serde::Serialize)]
 pub struct Uptime {
     pub days: u64,
     pub hours: u64,
     pub minutes: u64,
     pub seconds: u64,
-    pub total_seconds: u64
+    pub total_seconds: u64,
 }
 
 impl Uptime {
@@ -68,7 +68,7 @@ impl Uptime {
             hours,
             minutes,
             seconds,
-            total_seconds
+            total_seconds,
         }
     }
 
@@ -77,7 +77,7 @@ impl Uptime {
         return format!(
             "{} days {} hours {} minutes {} seconds [{}]",
             self.days, self.hours, self.minutes, self.seconds, self.total_seconds
-        )
+        );
     }
 }
 
@@ -114,6 +114,12 @@ impl SystemInfo {
     pub fn refresh(&mut self) {
         self.system.refresh_all();
     }
+
+    // Get user information
+    pub fn get_users(&self) -> &Users {
+        &self.users
+    }
+    
 
     /// Gets memory information.
     pub fn memory_info(&self) -> MemoryInfo {

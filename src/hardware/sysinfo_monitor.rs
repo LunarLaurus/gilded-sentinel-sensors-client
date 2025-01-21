@@ -2,6 +2,7 @@ use crate::hardware::sysinfo::{
     CpuInfo, DiskInfo, MemoryInfo, NetworkInfo, ProcessInfo, SystemInfo,
 };
 use log::info;
+use sysinfo::Users;
 
 use super::sysinfo::Uptime;
 
@@ -9,6 +10,7 @@ pub struct SysInfoMonitor {
     system_info: SystemInfo,
 }
 
+#[allow(dead_code)] // Suppress warnings for unused function.
 impl SysInfoMonitor {
     /// Creates a new instance of `SysInfoMonitor`.
     pub fn new() -> Self {
@@ -51,6 +53,20 @@ impl SysInfoMonitor {
         info!("CPU Usage per Core:");
         for (i, usage) in cpu_info.usage_per_core.iter().enumerate() {
             info!("Core {}: {:.2}%", i, usage);
+        }
+    }
+
+    /// Returns CPU information as a DTO.
+    pub fn get_user_info(&mut self) -> &Users {
+        self.refresh();
+        return self.system_info.get_users();
+    }
+
+    /// Logs CPU usage information.
+    pub fn log_user_info(&mut self) {
+        let info = self.get_user_info();
+        for user in info {
+            info!("Name: {}", user.name());
         }
     }
 
@@ -97,7 +113,6 @@ impl SysInfoMonitor {
     }
 
     /// Logs process list information.
-    #[allow(dead_code)] // Suppress warnings for unused function.
     pub fn log_process_info(&mut self) {
         let process_info = self.get_process_info();
         info!("Process List:");
@@ -145,5 +160,5 @@ impl SysInfoMonitor {
         self.log_cpu_info();
         info!("System monitoring setup complete.");
     }
-    
+
 }

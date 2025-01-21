@@ -11,13 +11,12 @@ use crate::config::config_loader::ConfigLoader;
 // Hardware Monitoring
 use crate::hardware::sysinfo_monitor::SysInfoMonitor;
 // Networking
-use crate::network::network_util::send_data_to_server;
-// Sensor Handling
-use crate::sensor::sensor_util::collect_sensor_data;
+use crate::network::network_util::NetworkUtil;
 // System Utilities
 use crate::system::installer;
 
 // Standard Library Imports
+use crate::hardware::sysinfo::{CpuInfo, DiskInfo, NetworkInfo};
 use log::{error, info};
 use signal_hook_registry::register;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -41,7 +40,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut monitor = SysInfoMonitor::new();
     monitor.setup_monitoring();
-    run_main_loop(&running, &config);
+    run_main_loop(&running, &config, &mut monitor);
 
     info!("Shutting down gracefully.");
     Ok(())
@@ -83,46 +82,21 @@ fn load_application_config() -> config::AppConfig {
 }
 
 /// Runs the main loop for data collection and transmission.
-fn run_main_loop(running: &Arc<AtomicBool>, config: &config::AppConfig) {
+fn run_main_loop(
+    running: &Arc<AtomicBool>,
+    config: &config::AppConfig,
+    monitor: &mut SysInfoMonitor,
+) {
     info!("Entering the main loop...");
-    let mut iteration_count = 0;
-    let mut monitor = SysInfoMonitor::new();
+
     while running.load(Ordering::Relaxed) {
-        process_sensor_data(&config.server);
-        iteration_count += 1;
-        if iteration_count >= 10 {
-            monitor.setup_monitoring(); // Log system info every 10 loops
-            iteration_count = 0; // Reset the counter
-        }
+        let cpu: CpuInfo = monitor.get_cpu_info();
+        let disks: Vec<DiskInfo> = monitor.get_disk_info();
+        let networks: Vec<NetworkInfo> = monitor.get_network_info();
+        NetworkUtil::process_sensor_data(&config.server, cpu, disks, networks);
+
         thread::sleep(Duration::from_secs(config.interval_secs));
     }
     info!("Exiting the main loop.");
 }
 
-/// Collects sensor data and sends it to the server.
-fn process_sensor_data(server: &str) {
-    match collect_sensor_data() {
-        Some(sensor_data) => {
-            let mut retries = 3;
-            while retries > 0 {
-                match send_data_to_server(&sensor_data, server) {
-                    Ok(_) => {
-                        info!("Sensor data sent successfully.");
-                        return;
-                    }
-                    Err(e) => {
-                        error!(
-                            "Error sending data to server: {}. Retries left: {}",
-                            e,
-                            retries - 1
-                        );
-                        retries -= 1;
-                        thread::sleep(Duration::from_secs(2));
-                    }
-                }
-            }
-            error!("Failed to send sensor data after multiple retries.");
-        }
-        None => error!("Failed to collect sensor data."),
-    }
-}

@@ -6,16 +6,16 @@ mod network;
 mod sensor;
 mod system;
 
-// System Monitoring
-use crate::hardware::sysinfo_monitor::SysInfoMonitor;
-// System Utilities
-use crate::system::installer;
-// Sensor Handling
-use crate::sensor::sensor::collect_sensor_data;
-// Networking
-use crate::network::network::send_data_to_server;
 // Configuration
 use crate::config::config::ConfigLoader;
+// Hardware Monitoring
+use crate::hardware::sysinfo_monitor::SysInfoMonitor;
+// Networking
+use crate::network::network::send_data_to_server;
+// Sensor Handling
+use crate::sensor::sensor::collect_sensor_data;
+// System Utilities
+use crate::system::installer;
 
 // Standard Library Imports
 use log::{error, info};

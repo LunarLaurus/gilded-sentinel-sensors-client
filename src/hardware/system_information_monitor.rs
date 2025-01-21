@@ -1,7 +1,9 @@
-use crate::{data::models::{ComponentInfo, CpuInfo, DiskInfo, MemoryInfo, NetworkInfo, ProcessInfo, Uptime}, hardware::system_information::SystemInfo};
+use crate::{
+    data::models::{ComponentInfo, CpuInfo, DiskInfo, MemoryInfo, NetworkInfo, ProcessInfo, Uptime},
+    hardware::system_information::SystemInfo,
+};
 use log::info;
 use sysinfo::{Components, Users};
-
 
 pub struct SysInfoMonitor {
     system_info: SystemInfo,
@@ -16,14 +18,39 @@ impl SysInfoMonitor {
         }
     }
 
-    /// Refreshes the system data.
-    fn refresh(&mut self) {
-        self.system_info.refresh();
+    /// Refreshes all system data.
+    pub fn refresh_all(&mut self) {
+        self.system_info.refresh_all();
+    }
+
+    /// Refreshes system-related data.
+    pub fn refresh_system(&mut self) {
+        self.system_info.refresh_system();
+    }
+
+    /// Refreshes components-related data.
+    pub fn refresh_components(&mut self) {
+        self.system_info.refresh_components();
+    }
+
+    /// Refreshes disk-related data.
+    pub fn refresh_disks(&mut self) {
+        self.system_info.refresh_disks();
+    }
+
+    /// Refreshes network-related data.
+    pub fn refresh_networks(&mut self) {
+        self.system_info.refresh_networks();
+    }
+
+    /// Refreshes user-related data.
+    pub fn refresh_users(&mut self) {
+        self.system_info.refresh_users();
     }
 
     /// Returns memory information.
     pub fn get_memory_info(&mut self) -> MemoryInfo {
-        self.refresh();
+        self.refresh_system();
         self.system_info.memory_info()
     }
 
@@ -38,7 +65,7 @@ impl SysInfoMonitor {
 
     /// Returns CPU information.
     pub fn get_cpu_info(&mut self) -> CpuInfo {
-        self.refresh();
+        self.refresh_system();
         self.system_info.cpu_info()
     }
 
@@ -55,7 +82,7 @@ impl SysInfoMonitor {
 
     /// Returns user information.
     pub fn get_user_info(&mut self) -> &Users {
-        self.refresh();
+        self.refresh_users();
         self.system_info.get_users()
     }
 
@@ -70,7 +97,7 @@ impl SysInfoMonitor {
 
     /// Returns disk usage information.
     pub fn get_disk_info(&mut self) -> Vec<DiskInfo> {
-        self.refresh();
+        self.refresh_disks();
         self.system_info.disk_info()
     }
 
@@ -88,7 +115,7 @@ impl SysInfoMonitor {
 
     /// Returns network usage information.
     pub fn get_network_info(&mut self) -> Vec<NetworkInfo> {
-        self.refresh();
+        self.refresh_networks();
         self.system_info.network_info()
     }
 
@@ -106,7 +133,7 @@ impl SysInfoMonitor {
 
     /// Returns process list information.
     pub fn get_process_info(&mut self) -> Vec<ProcessInfo> {
-        self.refresh();
+        self.refresh_system();
         self.system_info.process_info()
     }
 
@@ -124,7 +151,7 @@ impl SysInfoMonitor {
 
     /// Returns system details.
     pub fn get_system_details(&mut self) -> (String, String, String, String) {
-        self.refresh();
+        self.refresh_system();
         self.system_info.system_details()
     }
 
@@ -139,7 +166,7 @@ impl SysInfoMonitor {
 
     /// Returns system uptime.
     pub fn get_uptime(&mut self) -> Uptime {
-        self.refresh();
+        self.refresh_system();
         self.system_info.uptime()
     }
 
@@ -151,13 +178,13 @@ impl SysInfoMonitor {
 
     /// Returns system components as a read-only reference.
     pub fn get_components(&mut self) -> &Components {
-        self.refresh();
+        self.refresh_components();
         self.system_info.get_components()
     }
 
     /// Returns a vector of `ComponentInfo` DTOs representing system components.
     pub fn get_components_info(&mut self) -> Vec<ComponentInfo> {
-        self.refresh();
+        self.refresh_components();
         self.get_components()
             .iter()
             .map(ComponentInfo::from)

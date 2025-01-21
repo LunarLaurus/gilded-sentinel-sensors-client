@@ -15,7 +15,6 @@ use crate::network::network_util::NetworkUtil;
 // System Utilities
 use crate::system::installer;
 
-use data::models::{CpuInfo, DiskInfo, NetworkInfo};
 // Standard Library Imports
 use log::{error, info};
 use signal_hook_registry::register;
@@ -90,11 +89,7 @@ fn run_main_loop(
     info!("Entering the main loop...");
 
     while running.load(Ordering::Relaxed) {
-        let cpu: CpuInfo = monitor.get_cpu_info();
-        let disks: Vec<DiskInfo> = monitor.get_disk_info();
-        let networks: Vec<NetworkInfo> = monitor.get_network_info();
-        NetworkUtil::process_sensor_data(&config.server, cpu, disks, networks);
-
+        NetworkUtil::process_sensor_data(&config.server, monitor);
         thread::sleep(Duration::from_secs(config.interval_secs));
     }
     info!("Exiting the main loop.");

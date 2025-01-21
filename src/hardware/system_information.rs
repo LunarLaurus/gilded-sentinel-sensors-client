@@ -1,4 +1,4 @@
-use sysinfo::{Component, Components, Disks, Networks, Pid, Signal, System, Users};
+use sysinfo::{Components, Disks, Networks, System, Users};
 
 use crate::data::models::{CpuInfo, DiskInfo, MemoryInfo, NetworkInfo, ProcessInfo, Uptime};
 
@@ -30,14 +30,39 @@ impl SystemInfo {
             users,
         }
     }
+    
+    /// Refreshes only the system-related data.
+    pub fn refresh_system(&mut self) {
+        self.system.refresh_all();
+    }
+
+    /// Refreshes only the network-related data.
+    pub fn refresh_networks(&mut self) {
+        self.networks.refresh(false);
+    }
+
+    /// Refreshes only the disk-related data.
+    pub fn refresh_disks(&mut self) {
+        self.disks.refresh(false);
+    }
+
+    /// Refreshes only the components data.
+    pub fn refresh_components(&mut self) {
+        self.components.refresh(false);
+    }
+
+    /// Refreshes only the users data.
+    pub fn refresh_users(&mut self) {
+        self.users.refresh();
+    }
 
     /// Refreshes all system data.
-    pub fn refresh(&mut self) {
-        self.system.refresh_all();
-        self.networks.refresh(false);
-        self.disks.refresh(false);
-        self.components.refresh(false);
-        self.users.refresh();
+    pub fn refresh_all(&mut self) {
+        self.refresh_system();
+        self.refresh_networks();
+        self.refresh_disks();
+        self.refresh_components();
+        self.refresh_users();
     }
 
     /// Retrieves the user information as a read-only reference.

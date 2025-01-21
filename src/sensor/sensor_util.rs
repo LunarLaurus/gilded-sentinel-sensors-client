@@ -1,11 +1,11 @@
-use crate::data::models::{CpuCoreData, CpuPackageData, SensorData};
+use crate::data::models::{CpuCoreData, CpuPackageData};
 use std::io;
 use std::process::{Command, Stdio};
 
 use super::mock;
 
 /// Collects sensor data.
-pub fn collect_sensor_data() -> Vec<CpuPackageData> {
+pub fn collect_cpu_package_data() -> Vec<CpuPackageData> {
     if cfg!(target_os = "windows") {
         // Mock sensor data retrieval and parsing for Windows.
         let mock_data = mock::get_mock_sensor_data();

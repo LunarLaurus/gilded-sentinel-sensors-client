@@ -1,6 +1,4 @@
-use sysinfo::{
-    CpuExt, DiskExt, NetworkExt, PidExt, ProcessExt, System, SystemExt,
-};
+use sysinfo::{CpuExt, DiskExt, NetworkExt, PidExt, ProcessExt, System, SystemExt};
 
 pub struct MemoryInfo {
     pub total: u64,
@@ -62,7 +60,12 @@ impl SystemInfo {
     /// Gets CPU information.
     pub fn cpu_info(&self) -> CpuInfo {
         CpuInfo {
-            usage_per_core: self.system.cpus().iter().map(|cpu| cpu.cpu_usage()).collect(),
+            usage_per_core: self
+                .system
+                .cpus()
+                .iter()
+                .map(|cpu| cpu.cpu_usage())
+                .collect(),
             core_count: self.system.cpus().len(),
         }
     }
@@ -112,7 +115,14 @@ impl SystemInfo {
     }
 
     /// Gets system details (OS name, version, kernel, and hostname).
-    pub fn system_details(&self) -> (Option<String>, Option<String>, Option<String>, Option<String>) {
+    pub fn system_details(
+        &self,
+    ) -> (
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+    ) {
         (
             self.system.name(),
             self.system.os_version(),

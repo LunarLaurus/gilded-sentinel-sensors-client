@@ -24,7 +24,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{thread, time::Duration};
 
-
 const SIGINT: i32 = libc::SIGINT;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -89,11 +88,11 @@ fn run_main_loop(running: &Arc<AtomicBool>, config: &config::AppConfig) {
     let mut iteration_count = 0;
     let mut monitor = SysInfoMonitor::new();
     while running.load(Ordering::Relaxed) {
-        process_sensor_data(&config.server);        
+        process_sensor_data(&config.server);
         iteration_count += 1;
         if iteration_count >= 10 {
             monitor.setup_monitoring(); // Log system info every 10 loops
-            iteration_count = 0;       // Reset the counter
+            iteration_count = 0; // Reset the counter
         }
         thread::sleep(Duration::from_secs(config.interval_secs));
     }

@@ -1,4 +1,6 @@
-use crate::hardware::sysinfo::{CpuInfo, DiskInfo, MemoryInfo, NetworkInfo, ProcessInfo, SystemInfo};
+use crate::hardware::sysinfo::{
+    CpuInfo, DiskInfo, MemoryInfo, NetworkInfo, ProcessInfo, SystemInfo,
+};
 use log::info;
 
 pub struct SysInfoMonitor {
@@ -106,7 +108,14 @@ impl SysInfoMonitor {
     }
 
     /// Returns system details like OS name, version, kernel, and hostname.
-    pub fn get_system_details(&mut self) -> (Option<String>, Option<String>, Option<String>, Option<String>) {
+    pub fn get_system_details(
+        &mut self,
+    ) -> (
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+    ) {
         self.refresh();
         self.system_info.system_details()
     }

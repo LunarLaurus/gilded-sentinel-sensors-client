@@ -1,2 +1,2 @@
-pub mod sysinfo;
-pub mod sysinfo_monitor;
+pub mod system_information;
+pub mod system_information_monitor;

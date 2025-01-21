@@ -9,14 +9,14 @@ mod system;
 // Configuration
 use crate::config::config_loader::ConfigLoader;
 // Hardware Monitoring
-use crate::hardware::sysinfo_monitor::SysInfoMonitor;
+use crate::hardware::system_information_monitor::SysInfoMonitor;
 // Networking
 use crate::network::network_util::NetworkUtil;
 // System Utilities
 use crate::system::installer;
 
 // Standard Library Imports
-use crate::hardware::sysinfo::{CpuInfo, DiskInfo, NetworkInfo};
+use crate::hardware::system_information::{CpuInfo, DiskInfo, NetworkInfo};
 use log::{error, info};
 use signal_hook_registry::register;
 use std::sync::atomic::{AtomicBool, Ordering};

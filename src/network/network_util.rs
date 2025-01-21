@@ -5,7 +5,7 @@ use std::net::{TcpStream, ToSocketAddrs};
 use std::thread;
 use std::time::Duration;
 
-use crate::hardware::sysinfo::{CpuInfo, DiskInfo, NetworkInfo};
+use crate::hardware::system_information::{CpuInfo, DiskInfo, NetworkInfo};
 use crate::sensor::sensor_util::collect_sensor_data;
 
 pub struct NetworkUtil;

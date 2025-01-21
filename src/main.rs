@@ -7,13 +7,13 @@ mod sensor;
 mod system;
 
 // Configuration
-use crate::config::config::ConfigLoader;
+use crate::config::config_loader::ConfigLoader;
 // Hardware Monitoring
 use crate::hardware::sysinfo_monitor::SysInfoMonitor;
 // Networking
-use crate::network::network::send_data_to_server;
+use crate::network::network_util::send_data_to_server;
 // Sensor Handling
-use crate::sensor::sensor::collect_sensor_data;
+use crate::sensor::sensor_util::collect_sensor_data;
 // System Utilities
 use crate::system::installer;
 

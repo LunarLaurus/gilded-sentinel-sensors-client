@@ -1,2 +1,2 @@
-pub mod config;
-pub use config::AppConfig;
+pub mod config_loader;
+pub use config_loader::AppConfig;

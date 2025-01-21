@@ -1,2 +1,2 @@
 pub mod mock;
-pub mod sensor;
+pub mod sensor_util;

@@ -1,4 +1,4 @@
-use crate::models::SensorData;
+use crate::data::models::SensorData;
 use log::{error, info};
 use std::io::{self, Write};
 use std::net::{TcpStream, ToSocketAddrs};

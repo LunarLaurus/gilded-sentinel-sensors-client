@@ -1,8 +1,8 @@
-use crate::models::{CpuCoreData, CpuPackageData, SensorData};
+use crate::data::models::{CpuCoreData, CpuPackageData, SensorData};
 use std::io;
 use std::process::{Command, Stdio};
 
-mod mock;
+use super::mock;
 
 /// Collects sensor data.
 pub fn collect_sensor_data() -> Option<SensorData> {

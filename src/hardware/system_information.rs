@@ -1,45 +1,7 @@
-use std::fmt;
-
 use sysinfo::{Component, Components, Disks, Networks, Pid, Signal, System, Users};
 
-#[derive(serde::Serialize)]
-pub struct MemoryInfo {
-    pub total: u64,
-    pub used: u64,
-    pub total_swap: u64,
-    pub used_swap: u64,
-}
+use crate::data::models::{CpuInfo, DiskInfo, MemoryInfo, NetworkInfo, ProcessInfo, Uptime};
 
-#[derive(serde::Serialize)]
-pub struct CpuInfo {
-    pub usage_per_core: Vec<f32>,
-    pub core_count: usize,
-    pub cpu_arch: String,
-}
-
-#[derive(serde::Serialize)]
-pub struct DiskInfo {
-    pub name: String,
-    pub total_space: u64,
-    pub available_space: u64,
-    pub read_bytes: u64,
-    pub written_bytes: u64,
-}
-
-#[derive(serde::Serialize)]
-pub struct NetworkInfo {
-    pub interface_name: String,
-    pub received: u64,
-    pub transmitted: u64,
-    pub mtu: Option<u64>,
-}
-
-#[derive(serde::Serialize)]
-pub struct ProcessInfo {
-    pub name: String,
-    pub pid: u32,
-    pub memory: u64,
-}
 
 pub struct SystemInfo {
     system: System,
@@ -47,67 +9,6 @@ pub struct SystemInfo {
     disks: Disks,
     components: Components,
     users: Users,
-}
-
-#[derive(serde::Serialize)]
-pub struct Uptime {
-    pub days: u64,
-    pub hours: u64,
-    pub minutes: u64,
-    pub seconds: u64,
-    pub total_seconds: u64,
-}
-#[derive(serde::Serialize, Debug)]
-pub struct ComponentInfo {
-    pub label: String,
-    pub temperature: Option<f32>,
-    pub max_temperature: Option<f32>,
-    pub critical_temperature: Option<f32>,
-}
-
-impl From<&Component> for ComponentInfo {
-    fn from(component: &Component) -> Self {
-        Self {
-            label: component.label().to_string(),
-            temperature: component.temperature(),
-            max_temperature: component.max(),
-            critical_temperature: component.critical(),
-        }
-    }
-}
-
-impl Uptime {
-    pub fn from_seconds(total_seconds: u64) -> Self {
-        let days = total_seconds / 86400;
-        let hours = (total_seconds % 86400) / 3600;
-        let minutes = (total_seconds % 3600) / 60;
-        let seconds = total_seconds % 60;
-
-        Self {
-            days,
-            hours,
-            minutes,
-            seconds,
-            total_seconds,
-        }
-    }
-
-    pub fn to_string(&self) -> String {
-        format!(
-            "{} days {} hours {} minutes {} seconds [{}]",
-            self.days, self.hours, self.minutes, self.seconds, self.total_seconds
-        )
-    }
-}
-
-impl fmt::Display for Uptime {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{} days {} hours {} minutes {} seconds",
-            self.days, self.hours, self.minutes, self.seconds
-        )
-    }
 }
 
 impl SystemInfo {

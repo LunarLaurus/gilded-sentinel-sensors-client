@@ -15,15 +15,15 @@ use crate::network::network_util::NetworkUtil;
 // System Utilities
 use crate::system::installer;
 
+use data::models::{CpuInfo, DiskInfo, NetworkInfo};
 // Standard Library Imports
-use crate::hardware::system_information::{CpuInfo, DiskInfo, NetworkInfo};
 use log::{error, info};
 use signal_hook_registry::register;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{thread, time::Duration};
 
-const SIGINT: i32 = libc::SIGINT;
+pub const SIGINT: i32 = 2;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     initialize_logger();

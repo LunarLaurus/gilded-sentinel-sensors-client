@@ -5,17 +5,17 @@ use std::process::{Command, Stdio};
 use super::mock;
 
 /// Collects sensor data.
-pub fn collect_sensor_data() -> Option<SensorData> {
+pub fn collect_sensor_data() -> Vec<CpuPackageData> {
     if cfg!(target_os = "windows") {
         // Mock sensor data retrieval and parsing for Windows.
         let mock_data = mock::get_mock_sensor_data();
-        Some(parse_sensor_data(&mock_data))
+        return parse_sensor_data(&mock_data);
     } else {
         match execute_sensors_command() {
-            Ok(data) => Some(parse_sensor_data(&data)),
+            Ok(data) => return parse_sensor_data(&data),
             Err(e) => {
                 eprintln!("Error retrieving sensor data: {}", e);
-                None
+                Vec::new()
             }
         }
     }
@@ -40,7 +40,7 @@ fn execute_sensors_command() -> io::Result<String> {
 }
 
 /// Parses the output from `sensors` into structured data.
-fn parse_sensor_data(raw_data: &str) -> SensorData {
+fn parse_sensor_data(raw_data: &str) -> Vec<CpuPackageData> {
     let mut cpu_packages = Vec::new();
     let mut current_package: Option<CpuPackageData> = None;
 
@@ -65,7 +65,7 @@ fn parse_sensor_data(raw_data: &str) -> SensorData {
         cpu_packages.push(package);
     }
 
-    SensorData { cpu_packages }
+    return cpu_packages;
 }
 
 /// Checks if a line indicates an adapter.

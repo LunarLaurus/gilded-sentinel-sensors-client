@@ -1,10 +1,7 @@
-use crate::hardware::system_information::{
-    CpuInfo, DiskInfo, MemoryInfo, NetworkInfo, ProcessInfo, SystemInfo,
-};
+use crate::{data::models::{ComponentInfo, CpuInfo, DiskInfo, MemoryInfo, NetworkInfo, ProcessInfo, Uptime}, hardware::system_information::SystemInfo};
 use log::info;
 use sysinfo::{Components, Users};
 
-use super::system_information::{ComponentInfo, Uptime};
 
 pub struct SysInfoMonitor {
     system_info: SystemInfo,

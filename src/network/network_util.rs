@@ -5,7 +5,7 @@ use std::net::{TcpStream, ToSocketAddrs};
 use std::thread;
 use std::time::Duration;
 
-use crate::hardware::system_information::{CpuInfo, DiskInfo, NetworkInfo};
+use crate::data::models::{CpuInfo, DiskInfo, NetworkInfo};
 use crate::sensor::sensor_util::collect_sensor_data;
 
 pub struct NetworkUtil;
@@ -82,15 +82,11 @@ impl NetworkUtil {
                 Err(e) => error!("Failed to send {} data: {}.", description, e),
             }
         }
+        let sensor_data = collect_sensor_data();
 
         send_and_log(&cpu, "CPU", server);
         send_and_log(&disks, "Disk", server);
         send_and_log(&networks, "Network", server);
-
-        if let Some(sensor_data) = collect_sensor_data() {
-            send_and_log(&sensor_data, "Sensor", server);
-        } else {
-            error!("Failed to collect sensor data.");
-        }
+        send_and_log(&sensor_data, "Sensor", server);
     }
 }

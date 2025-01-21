@@ -2,15 +2,15 @@ use crate::hardware::sysinfo::{
     CpuInfo, DiskInfo, MemoryInfo, NetworkInfo, ProcessInfo, SystemInfo,
 };
 use log::info;
-use sysinfo::Users;
+use sysinfo::{Components, Users};
 
-use super::sysinfo::Uptime;
+use super::sysinfo::{ComponentInfo, Uptime};
 
 pub struct SysInfoMonitor {
     system_info: SystemInfo,
 }
 
-#[allow(dead_code)] // Suppress warnings for unused function.
+#[allow(dead_code)] // Suppress warnings for unused functions.
 impl SysInfoMonitor {
     /// Creates a new instance of `SysInfoMonitor`.
     pub fn new() -> Self {
@@ -24,7 +24,7 @@ impl SysInfoMonitor {
         self.system_info.refresh();
     }
 
-    /// Returns memory information as a DTO.
+    /// Returns memory information.
     pub fn get_memory_info(&mut self) -> MemoryInfo {
         self.refresh();
         self.system_info.memory_info()
@@ -39,7 +39,7 @@ impl SysInfoMonitor {
         info!("Used Swap: {} bytes", memory_info.used_swap);
     }
 
-    /// Returns CPU information as a DTO.
+    /// Returns CPU information.
     pub fn get_cpu_info(&mut self) -> CpuInfo {
         self.refresh();
         self.system_info.cpu_info()
@@ -56,21 +56,22 @@ impl SysInfoMonitor {
         }
     }
 
-    /// Returns CPU information as a DTO.
+    /// Returns user information.
     pub fn get_user_info(&mut self) -> &Users {
         self.refresh();
-        return self.system_info.get_users();
+        self.system_info.get_users()
     }
 
-    /// Logs CPU usage information.
+    /// Logs user information.
     pub fn log_user_info(&mut self) {
-        let info = self.get_user_info();
-        for user in info {
+        let users = self.get_user_info();
+        info!("Users:");
+        for user in users.iter() {
             info!("Name: {}", user.name());
         }
     }
 
-    /// Returns disk usage information as a list of DTOs.
+    /// Returns disk usage information.
     pub fn get_disk_info(&mut self) -> Vec<DiskInfo> {
         self.refresh();
         self.system_info.disk_info()
@@ -88,7 +89,7 @@ impl SysInfoMonitor {
         }
     }
 
-    /// Returns network usage information as a list of DTOs.
+    /// Returns network usage information.
     pub fn get_network_info(&mut self) -> Vec<NetworkInfo> {
         self.refresh();
         self.system_info.network_info()
@@ -106,7 +107,7 @@ impl SysInfoMonitor {
         }
     }
 
-    /// Returns process list information as a list of DTOs.
+    /// Returns process list information.
     pub fn get_process_info(&mut self) -> Vec<ProcessInfo> {
         self.refresh();
         self.system_info.process_info()
@@ -124,7 +125,7 @@ impl SysInfoMonitor {
         }
     }
 
-    /// Returns system details like OS name, version, kernel, architecture, and hostname.
+    /// Returns system details.
     pub fn get_system_details(&mut self) -> (String, String, String, String, String) {
         self.refresh();
         self.system_info.system_details()
@@ -143,15 +144,55 @@ impl SysInfoMonitor {
     /// Returns system uptime.
     pub fn get_uptime(&mut self) -> Uptime {
         self.refresh();
-        Uptime::from_seconds(self.system_info.uptime())
+        self.system_info.uptime()
     }
 
     /// Logs system uptime.
     pub fn log_uptime(&mut self) {
-        info!("System Uptime: {}", self.get_uptime().to_string());
+        let uptime = self.get_uptime();
+        info!("System Uptime: {}", uptime.to_string());
     }
 
-    /// Logs all system information by invoking all log methods.
+    /// Returns system components as a read-only reference.
+    pub fn get_components(&mut self) -> &Components {
+        self.refresh();
+        self.system_info.get_components()
+    }
+
+    /// Returns a vector of `ComponentInfo` DTOs representing system components.
+    pub fn get_components_info(&mut self) -> Vec<ComponentInfo> {
+        self.refresh();
+        self.get_components()
+            .iter()
+            .map(ComponentInfo::from)
+            .collect()
+    }
+
+    /// Logs detailed information about all system components.
+    pub fn log_components(&mut self) {
+        let components_info = self.get_components_info();
+        info!("System Components:");
+        for component in components_info {
+            info!(
+                "Component: {} | Temperature: {} | Max Temperature: {} | Critical Temperature: {}",
+                component.label,
+                component
+                    .temperature
+                    .map(|t| format!("{:.2}°C", t))
+                    .unwrap_or_else(|| "Unavailable".to_string()),
+                component
+                    .max_temperature
+                    .map(|t| format!("{:.2}°C", t))
+                    .unwrap_or_else(|| "Unavailable".to_string()),
+                component
+                    .critical_temperature
+                    .map(|t| format!("{:.2}°C", t))
+                    .unwrap_or_else(|| "Unavailable".to_string()),
+            );
+        }
+    }
+
+    /// Logs essential system information by invoking all log methods.
     pub fn setup_monitoring(&mut self) {
         info!("Setting up system monitoring...");
         self.log_system_details();
@@ -160,5 +201,4 @@ impl SysInfoMonitor {
         self.log_cpu_info();
         info!("System monitoring setup complete.");
     }
-
 }

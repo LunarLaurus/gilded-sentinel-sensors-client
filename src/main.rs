@@ -94,4 +94,3 @@ fn run_main_loop(
     }
     info!("Exiting the main loop.");
 }
-

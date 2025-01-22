@@ -1,5 +1,7 @@
 use crate::{
-    data::models::{ComponentInfo, CpuInfo, DiskInfo, MemoryInfo, NetworkInfo, ProcessInfo, Uptime},
+    data::models::{
+        ComponentInfo, CpuInfo, DiskInfo, MemoryInfo, NetworkInfo, ProcessInfo, Uptime,
+    },
     hardware::system_information::SystemInfo,
 };
 use log::info;

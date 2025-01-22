@@ -69,38 +69,37 @@ impl NetworkUtil {
         }
     }
 
-/// Collects and sends sensor data to the server.
-pub fn process_sensor_data(server: &str, monitor: &mut SysInfoMonitor) {
-    // Define a reusable function for sending and logging
-    fn send_and_log<T: Serialize>(data: &T, description: &str, server: &str) {
-        match NetworkUtil::send_with_retries(data, server, 3) {
-            Ok(_) => info!("{} data sent successfully.", description),
-            Err(e) => error!("Failed to send {} data: {}.", description, e),
+    /// Collects and sends sensor data to the server.
+    pub fn process_sensor_data(server: &str, monitor: &mut SysInfoMonitor) {
+        // Define a reusable function for sending and logging
+        fn send_and_log<T: Serialize>(data: &T, description: &str, server: &str) {
+            match NetworkUtil::send_with_retries(data, server, 3) {
+                Ok(_) => info!("{} data sent successfully.", description),
+                Err(e) => error!("Failed to send {} data: {}.", description, e),
+            }
         }
+
+        // Retrieve all required data from the monitor
+        let cpu_info = monitor.get_cpu_info();
+        let memory_info = monitor.get_memory_info();
+        let disks = monitor.get_disk_info();
+        let networks = monitor.get_network_info();
+        let uptime = monitor.get_uptime();
+        let components = monitor.get_components_info();
+        let cpu_packages = collect_cpu_package_data();
+
+        // Construct the SensorData DTO using retrieved data
+        let sensor_data = SensorData {
+            uptime,
+            cpu_info,
+            memory_info,
+            disks,
+            network_interfaces: networks,
+            components,
+            cpu_packages,
+        };
+
+        // Send the complete SensorData DTO
+        send_and_log(&sensor_data, "SensorDataDTO", server);
     }
-
-    // Retrieve all required data from the monitor
-    let cpu_info = monitor.get_cpu_info();
-    let memory_info = monitor.get_memory_info();
-    let disks = monitor.get_disk_info();
-    let networks = monitor.get_network_info();
-    let uptime = monitor.get_uptime();
-    let components = monitor.get_components_info();
-    let cpu_packages = collect_cpu_package_data();
-
-    // Construct the SensorData DTO using retrieved data
-    let sensor_data = SensorData {
-        uptime,
-        cpu_info,
-        memory_info,
-        disks,
-        network_interfaces: networks,
-        components,
-        cpu_packages,
-    };
-
-    // Send the complete SensorData DTO
-    send_and_log(&sensor_data, "SensorDataDTO", server);
-}
-
 }

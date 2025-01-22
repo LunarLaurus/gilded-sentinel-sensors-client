@@ -2,7 +2,6 @@ use sysinfo::{Components, Disks, Networks, System, Users};
 
 use crate::data::models::{CpuInfo, DiskInfo, MemoryInfo, NetworkInfo, ProcessInfo, Uptime};
 
-
 pub struct SystemInfo {
     system: System,
     networks: Networks,
@@ -30,7 +29,7 @@ impl SystemInfo {
             users,
         }
     }
-    
+
     /// Refreshes only the system-related data.
     pub fn refresh_system(&mut self) {
         self.system.refresh_all();
@@ -153,7 +152,7 @@ impl SystemInfo {
             sysinfo::System::name().unwrap_or_else(|| "<unknown>".to_string()),
             sysinfo::System::os_version().unwrap_or_else(|| "<unknown>".to_string()),
             sysinfo::System::kernel_version().unwrap_or_else(|| "<unknown>".to_string()),
-            sysinfo::System::host_name().unwrap_or_else(|| "<unknown>".to_string())
+            sysinfo::System::host_name().unwrap_or_else(|| "<unknown>".to_string()),
         )
     }
 }

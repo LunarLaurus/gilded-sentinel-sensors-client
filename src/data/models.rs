@@ -1,5 +1,5 @@
-use std::fmt;
 use serde::Serialize;
+use std::fmt;
 use sysinfo::Component;
 
 /// Represents individual CPU core data.

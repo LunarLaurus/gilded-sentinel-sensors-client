@@ -13,7 +13,7 @@ mod sensor;
 mod system;
 
 use config::config_loader::{initialize_logger, load_application_config};
-use hardware::esxi::EsxiUtil;
+use hardware::esxi_util::EsxiUtil;
 use log::{info, warn};
 use std::sync::{atomic::AtomicBool, Arc};
 use system::signal::setup_signal_handler;

@@ -1,11 +1,12 @@
 use crate::data::models::{EsxiCoreDetail, EsxiCpuDetail, EsxiSystemDto};
 use std::collections::{HashMap, HashSet};
-use std::process::{Command, Stdio};
 use std::str;
 use std::sync::OnceLock;
 
+use super::esxi_util::EsxiUtil;
+
 /// Static utility for ESXi-specific operations.
-pub struct EsxiUtil;
+pub struct Esxi;
 
 // Caches for performance optimization
 static CACHED_CPU_INFO: OnceLock<String> = OnceLock::new();
@@ -13,73 +14,7 @@ static CACHED_CPU_LIST: OnceLock<Vec<String>> = OnceLock::new();
 static CACHED_CORE_TYPES: OnceLock<HashMap<String, String>> = OnceLock::new();
 static CACHED_TJMAX: OnceLock<i32> = OnceLock::new();
 
-impl EsxiUtil {
-    // -----------------------------------
-    // Environment & TTY Checking
-    // -----------------------------------
-
-    /// Checks if the program is running in a TTY environment (Unix-based).
-    #[cfg(unix)]
-    pub fn is_tty() -> bool {
-        use std::os::unix::io::AsRawFd;
-        unsafe { libc::isatty(std::io::stdout().as_raw_fd()) != 0 }
-    }
-
-    /// Placeholder for non-Unix platforms.
-    #[cfg(not(unix))]
-    pub fn is_tty() -> bool {
-        true
-    }
-
-    /// Checks if the system is running on ESXi by verifying the presence of the `vsish` command.
-    pub fn is_running_on_esxi() -> bool {
-        Self::execute_command("which", &["vsish"]).is_ok()
-    }
-
-    // -----------------------------------
-    // Command Execution Helpers
-    // -----------------------------------
-
-    /// Executes a command without a TTY, captures output, handles errors, and logs details.
-    fn execute_command(command: &str, args: &[&str]) -> Result<String, String> {
-        log::debug!("Executing command: `{}` with args: {:?}", command, args);
-
-        let output_result = Command::new(command)
-            .args(args)
-            .stdin(Stdio::null()) // Prevent TTY expectations for input
-            .stdout(Stdio::piped()) // Capture stdout
-            .stderr(Stdio::piped()) // Capture stderr
-            .output();
-
-        match output_result {
-            Ok(output) => {
-                if output.status.success() {
-                    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-                    log::debug!("Command `{}` succeeded: {}", command, stdout);
-                    Ok(stdout)
-                } else {
-                    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-                    log::error!(
-                        "Command `{}` with args {:?} failed (exit code: {}): {}",
-                        command,
-                        args,
-                        output.status.code().unwrap_or(-1),
-                        stderr
-                    );
-                    Err(stderr)
-                }
-            }
-            Err(e) => {
-                log::error!(
-                    "Failed to execute command `{}` with args {:?}: {}",
-                    command,
-                    args,
-                    e
-                );
-                Err(e.to_string())
-            }
-        }
-    }
+impl Esxi {
 
     // -----------------------------------
     // CPU Information Retrieval
@@ -88,7 +23,7 @@ impl EsxiUtil {
     /// Retrieves and caches the TjMax value for the system.
     pub fn get_tjmax() -> i32 {
         *CACHED_TJMAX.get_or_init(|| {
-            match Self::execute_command("vsish", &["-e", "cat", "/hardware/msr/pcpu/0/addr/0x1A2"])
+            match EsxiUtil::execute_command("vsish", &["-e", "cat", "/hardware/msr/pcpu/0/addr/0x1A2"])
             {
                 Ok(output) => {
                     let raw_tjmax = output.trim();
@@ -120,7 +55,7 @@ impl EsxiUtil {
     /// Retrieves and caches CPU information.
     fn get_cached_cpu_info() -> &'static str {
         CACHED_CPU_INFO.get_or_init(|| {
-            match Self::execute_command("vsish", &["-e", "cat", "/hardware/cpu/cpuInfo"]) {
+            match EsxiUtil::execute_command("vsish", &["-e", "cat", "/hardware/cpu/cpuInfo"]) {
                 Ok(output) => output,
                 Err(_) => String::new(),
             }
@@ -130,7 +65,7 @@ impl EsxiUtil {
     /// Retrieves and caches the CPU list.
     fn get_cached_cpu_list() -> &'static Vec<String> {
         CACHED_CPU_LIST.get_or_init(|| {
-            match Self::execute_command("vsish", &["-e", "ls", "/hardware/msr/pcpu/"]) {
+            match EsxiUtil::execute_command("vsish", &["-e", "ls", "/hardware/msr/pcpu/"]) {
                 Ok(output) => output
                     .lines()
                     .map(|line| line.trim_end_matches('/').to_string())
@@ -143,7 +78,7 @@ impl EsxiUtil {
     /// Retrieves core and socket information for a specific CPU.
     pub fn get_core_socket_info(cpu: &str) -> (String, String) {
         let path = format!("/hardware/cpu/cpuList/{}", cpu);
-        match Self::execute_command("vsish", &["-e", "cat", &path]) {
+        match EsxiUtil::execute_command("vsish", &["-e", "cat", &path]) {
             Ok(output) => {
                 let core_info = output;
                 let core = Self::parse_core_socket_info(&core_info, "core:");
@@ -157,7 +92,7 @@ impl EsxiUtil {
     /// Retrieves CPU temperature for a specific core.
     pub fn get_cpu_temperature(cpu: &str, tjmax: i32) -> (String, String) {
         let path = format!("/hardware/msr/pcpu/{}/addr/0x19C", cpu);
-        match Self::execute_command("vsish", &["-e", "cat", &path]) {
+        match EsxiUtil::execute_command("vsish", &["-e", "cat", &path]) {
             Ok(output) => {
                 let raw_value = output.trim();
                 if Self::validate_hex(raw_value) {

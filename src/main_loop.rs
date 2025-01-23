@@ -4,7 +4,8 @@
 //! and delegating to the appropriate environment-specific loop.
 
 use crate::config::AppConfig;
-use crate::hardware::esxi::EsxiUtil;
+use crate::hardware::esxi::Esxi;
+use crate::hardware::esxi_util::EsxiUtil;
 use crate::hardware::system_information_monitor::SysInfoMonitor;
 use crate::network::network_util::NetworkUtil;
 use crate::sensor::sensor_util::SensorUtils;
@@ -29,8 +30,8 @@ pub fn run_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
 
 /// Main loop for ESXi systems.
 fn run_esxi_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
-    let tjmax = EsxiUtil::get_tjmax();
-    let (sockets, cores, threads) = EsxiUtil::get_cpu_topology();
+    let tjmax = Esxi::get_tjmax();
+    let (sockets, cores, threads) = Esxi::get_cpu_topology();
 
     info!(
         "ESXi Host Info: TjMax = {}°C, Sockets = {}, Cores = {}, Threads = {}",
@@ -38,7 +39,7 @@ fn run_esxi_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
     );
 
     while running.load(Ordering::Relaxed) {
-        let esxi_data = EsxiUtil::build_esxi_system_dto();
+        let esxi_data = Esxi::build_esxi_system_dto();
 
         match NetworkUtil::send_with_retries(&esxi_data, &config.server, 3) {
             Ok(_) => info!("ESXi CPU data sent successfully."),

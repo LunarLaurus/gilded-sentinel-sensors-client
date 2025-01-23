@@ -15,7 +15,6 @@ static CACHED_CORE_TYPES: OnceLock<HashMap<String, String>> = OnceLock::new();
 static CACHED_TJMAX: OnceLock<i32> = OnceLock::new();
 
 impl Esxi {
-
     // -----------------------------------
     // CPU Information Retrieval
     // -----------------------------------
@@ -23,8 +22,10 @@ impl Esxi {
     /// Retrieves and caches the TjMax value for the system.
     pub fn get_tjmax() -> i32 {
         *CACHED_TJMAX.get_or_init(|| {
-            match EsxiUtil::execute_command("vsish", &["-e", "cat", "/hardware/msr/pcpu/0/addr/0x1A2"])
-            {
+            match EsxiUtil::execute_command(
+                "vsish",
+                &["-e", "cat", "/hardware/msr/pcpu/0/addr/0x1A2"],
+            ) {
                 Ok(output) => {
                     let raw_tjmax = output.trim();
                     if Self::validate_hex(raw_tjmax) {

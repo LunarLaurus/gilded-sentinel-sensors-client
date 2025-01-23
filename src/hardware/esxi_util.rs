@@ -26,7 +26,6 @@ impl EsxiUtil {
     }
 
     pub fn redirect_to_null() {
-
         let dev_null = OpenOptions::new()
             .read(true)
             .write(true)
@@ -111,5 +110,4 @@ impl EsxiUtil {
             Err(FromUtf8Error { .. }) => "<Invalid UTF-8 Output>".to_string(),
         }
     }
-    
 }

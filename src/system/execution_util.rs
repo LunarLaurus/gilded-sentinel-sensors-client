@@ -3,10 +3,10 @@ use nix::sys::wait::waitpid;
 use nix::sys::wait::WaitStatus;
 use nix::unistd::{close, pipe};
 use nix::unistd::{fork, ForkResult};
-use std::borrow::Cow;
 use std::ffi::CString;
 use std::fs::File;
 use std::io::{self, Read};
+use std::os::fd::AsRawFd;
 use std::os::fd::FromRawFd;
 use std::process::{Command, Stdio};
 use std::string::FromUtf8Error;
@@ -152,16 +152,16 @@ impl ExecutionUtil {
         match unsafe { fork() } {
             Ok(ForkResult::Parent { child }) => {
                 // Parent process: close the write ends of the pipes
-                close(stdout_write).map_err(|e| e.to_string())?;
-                close(stderr_write).map_err(|e| e.to_string())?;
+                close(stdout_write.as_raw_fd()).map_err(|e| e.to_string())?;
+                close(stderr_write.as_raw_fd()).map_err(|e| e.to_string())?;
 
                 // Read stdout and stderr from the pipes
                 let mut stdout = String::new();
                 let mut stderr = String::new();
                 unsafe {
-                    let _ = io::BufReader::new(File::from_raw_fd(stdout_read))
+                    let _ = io::BufReader::new(File::from_raw_fd(stdout_read.as_raw_fd()))
                         .read_to_string(&mut stdout);
-                    let _ = io::BufReader::new(File::from_raw_fd(stderr_read))
+                    let _ = io::BufReader::new(File::from_raw_fd(stderr_read.as_raw_fd()))
                         .read_to_string(&mut stderr);
                 }
 
@@ -176,13 +176,13 @@ impl ExecutionUtil {
             Ok(ForkResult::Child) => {
                 // Child process: redirect stdout and stderr to the pipes
                 unsafe {
-                    libc::dup2(stdout_write, libc::STDOUT_FILENO);
-                    libc::dup2(stderr_write, libc::STDERR_FILENO);
+                    libc::dup2(stdout_write.as_raw_fd(), libc::STDOUT_FILENO);
+                    libc::dup2(stderr_write.as_raw_fd(), libc::STDERR_FILENO);
                 }
 
                 // Close the read ends of the pipes
-                let _ = close(stdout_read);
-                let _ = close(stderr_read);
+                let _ = close(stdout_read.as_raw_fd());
+                let _ = close(stderr_read.as_raw_fd());
 
                 // Prepare the command and arguments
                 let c_command = CString::new(command).map_err(|e| e.to_string())?;

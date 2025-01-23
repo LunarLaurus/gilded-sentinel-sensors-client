@@ -23,6 +23,16 @@ pub struct ConfigLoader {
     exe_dir: String,
 }
 
+pub fn initialize_logger() {
+    env_logger::Builder::from_default_env()
+        .filter_level(log::LevelFilter::Info)
+        .init();
+}
+
+pub fn load_application_config() -> AppConfig {
+    crate::config::config_loader::ConfigLoader::new().load_config()
+}
+
 impl ConfigLoader {
     /// Creates a new ConfigLoader with the executable's directory.
     pub fn new() -> Self {
@@ -145,4 +155,5 @@ impl ConfigLoader {
             interval_secs,
         }
     }
+    
 }

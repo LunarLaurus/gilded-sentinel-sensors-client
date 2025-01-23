@@ -171,9 +171,11 @@ impl ExecutionUtil {
         for arg in args {
             cmd.arg(arg);
         }
-    
-        let output = cmd.output().map_err(|e| format!("Failed to execute binary: {}", e))?;
-    
+
+        let output = cmd
+            .output()
+            .map_err(|e| format!("Failed to execute binary: {}", e))?;
+
         if output.status.success() {
             Ok(String::from_utf8_lossy(&output.stdout).to_string())
         } else {

@@ -3,6 +3,7 @@ use nix::sys::wait::waitpid;
 use nix::sys::wait::WaitStatus;
 use nix::unistd::{close, pipe};
 use nix::unistd::{fork, ForkResult};
+use std::borrow::Cow;
 use std::ffi::CString;
 use std::fs::File;
 use std::io::{self, Read};
@@ -15,6 +16,71 @@ pub struct ExecutionUtil;
 
 #[allow(dead_code)]
 impl ExecutionUtil {
+    
+    /// Executes a command without relying on `fork()`, using `libc::system`.
+    ///
+    /// This is specifically designed for environments like ESXi where `fork()` is unavailable.
+    ///
+    /// # Arguments
+    ///
+    /// * `command` - The command to execute (e.g., "ls").
+    /// * `args` - A slice of arguments for the command (e.g., `["-l", "/"]`).
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` containing the command's standard output if it succeeds.
+    /// * `Err(String)` containing the command's standard error or an execution error message if it fails.
+    pub fn execute_no_fork(command: &str, args: &[&str]) -> Result<String, String> {
+        debug!(
+            "Executing command (no fork): `{}` with args: {:?}",
+            command, args
+        );
+
+        // Manually escape each argument
+        let escaped_args: Vec<String> = args.iter().map(|arg| Self::shell_escape(arg)).collect();
+        let full_command = format!("{} {}", command, escaped_args.join(" "));
+
+        // Convert the full command into a C-compatible string
+        let c_command = match CString::new(full_command) {
+            Ok(cstr) => cstr,
+            Err(e) => {
+                error!("Failed to construct CString for command: {}", e);
+                return Err(format!("Invalid command string: {}", e));
+            }
+        };
+
+        unsafe {
+            // Use libc::system to execute the command
+            let status = libc::system(c_command.as_ptr());
+
+            if status == -1 {
+                let err = "libc::system call failed.";
+                error!("{}", err);
+                Err(err.to_string())
+            } else if libc::WIFEXITED(status) && libc::WEXITSTATUS(status) == 0 {
+                debug!("Command executed successfully.");
+                Ok("Command executed successfully.".to_string())
+            } else {
+                let exit_code = libc::WEXITSTATUS(status);
+                let err = format!("Command failed with exit code: {}", exit_code);
+                error!("{}", err);
+                Err(err)
+            }
+        }
+    }
+
+    /// Manual shell argument escaping to handle special characters.
+    fn shell_escape(arg: &str) -> String {
+        if arg
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
+        {
+            arg.to_string() // No escaping needed
+        } else {
+            format!("'{}'", arg.replace('\'', r"'\''")) // Wrap in single quotes and escape inner quotes
+        }
+    }
+
     /// Executes a command using `std::process::Command`, capturing output and avoiding TTY assumptions.
     ///
     /// # Arguments

@@ -60,7 +60,7 @@ impl EsxiUtil {
         );
 
         // Call the utility function and handle its result
-        match ExecutionUtil::execute_with_libc(command, args) {
+        match ExecutionUtil::execute_no_fork(command, args) {
             Ok(output) => {
                 info!("Command succeeded with output: {}", output);
                 Ok(output) // Return the success result

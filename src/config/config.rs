@@ -1,5 +1,5 @@
-use std::sync::OnceLock;
 use crate::config::AppConfig;
+use std::sync::OnceLock;
 
 pub struct Config;
 
@@ -19,7 +19,9 @@ impl Config {
     /// # Panics
     /// Panics if the configuration has not been initialized.
     pub fn get() -> &'static AppConfig {
-        CONFIG_INSTANCE.get().expect("Configuration must be initialized")
+        CONFIG_INSTANCE
+            .get()
+            .expect("Configuration must be initialized")
     }
 
     /// Convenience method for getting the execution method.

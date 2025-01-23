@@ -42,7 +42,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!(
         "Application running with configuration: server = {}, interval_secs = {}",
-        Config::server(), Config::interval_secs()
+        Config::server(),
+        Config::interval_secs()
     );
 
     info!("Executing Main Loop.");

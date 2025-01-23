@@ -1,50 +1,72 @@
 use crate::data::models::{EsxiCoreDetail, EsxiCpuDetail, EsxiSystemDto};
-#[cfg(unix)]
-use std::os::unix::io::AsRawFd;
-use std::process::{Command, Output, Stdio};
+use std::collections::{HashMap, HashSet};
+use std::process::{Command, Stdio};
 use std::str;
 use std::sync::OnceLock;
 
 /// Static utility for ESXi-specific operations.
 pub struct EsxiUtil;
 
+// Caches for performance optimization
 static CACHED_CPU_INFO: OnceLock<String> = OnceLock::new();
 static CACHED_CPU_LIST: OnceLock<Vec<String>> = OnceLock::new();
+static CACHED_CORE_TYPES: OnceLock<HashMap<String, String>> = OnceLock::new();
 static CACHED_TJMAX: OnceLock<i32> = OnceLock::new();
 
 impl EsxiUtil {
+    // -----------------------------------
+    // Environment & TTY Checking
+    // -----------------------------------
+
+    /// Checks if the program is running in a TTY environment (Unix-based).
     #[cfg(unix)]
     pub fn is_tty() -> bool {
+        use std::os::unix::io::AsRawFd;
         unsafe { libc::isatty(std::io::stdout().as_raw_fd()) != 0 }
     }
 
+    /// Placeholder for non-Unix platforms.
     #[cfg(not(unix))]
     pub fn is_tty() -> bool {
-        // Default behavior for non-Unix systems
-        false
+        true
     }
 
-    /// Executes a command and handles output, errors, and logging in one place.
-    fn execute_command(command: &str, args: &[&str]) -> Result<Output, String> {
-        match Command::new(command)
+    /// Checks if the system is running on ESXi by verifying the presence of the `vsish` command.
+    pub fn is_running_on_esxi() -> bool {
+        Self::execute_command("which", &["vsish"]).is_ok()
+    }
+
+    // -----------------------------------
+    // Command Execution Helpers
+    // -----------------------------------
+
+    /// Executes a command without a TTY, captures output, handles errors, and logs details.
+    fn execute_command(command: &str, args: &[&str]) -> Result<String, String> {
+        log::debug!("Executing command: `{}` with args: {:?}", command, args);
+
+        let output_result = Command::new(command)
             .args(args)
             .stdin(Stdio::null()) // Prevent TTY expectations for input
             .stdout(Stdio::piped()) // Capture stdout
             .stderr(Stdio::piped()) // Capture stderr
-            .output()
-        {
+            .output();
+
+        match output_result {
             Ok(output) => {
                 if output.status.success() {
-                    Ok(output)
+                    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+                    log::debug!("Command `{}` succeeded: {}", command, stdout);
+                    Ok(stdout)
                 } else {
-                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
                     log::error!(
-                        "Command `{}` with args {:?} failed: {}",
+                        "Command `{}` with args {:?} failed (exit code: {}): {}",
                         command,
                         args,
+                        output.status.code().unwrap_or(-1),
                         stderr
                     );
-                    Err(stderr.to_string())
+                    Err(stderr)
                 }
             }
             Err(e) => {
@@ -59,18 +81,16 @@ impl EsxiUtil {
         }
     }
 
-    /// Checks if the system is running on ESXi by verifying the presence of the `vsish` command.
-    pub fn is_running_on_esxi() -> bool {
-        Self::execute_command("which", &["vsish"]).is_ok()
-    }
+    // -----------------------------------
+    // CPU Information Retrieval
+    // -----------------------------------
 
     /// Retrieves and caches the TjMax value for the system.
     pub fn get_tjmax() -> i32 {
         *CACHED_TJMAX.get_or_init(|| {
-            match Self::execute_command("vsish", &["-e", "cat", "/hardware/msr/pcpu/0/addr/0x1A2"])
-            {
+            match Self::execute_command("vsish", &["-e", "cat", "/hardware/msr/pcpu/0/addr/0x1A2"]) {
                 Ok(output) => {
-                    let raw_tjmax = str::from_utf8(&output.stdout).unwrap_or("").trim();
+                    let raw_tjmax = output.trim();
                     if Self::validate_hex(raw_tjmax) {
                         if let Ok(raw_value) = i32::from_str_radix(&raw_tjmax[2..], 16) {
                             return (raw_value >> 16) & 0xFF;
@@ -100,7 +120,7 @@ impl EsxiUtil {
     fn get_cached_cpu_info() -> &'static str {
         CACHED_CPU_INFO.get_or_init(|| {
             match Self::execute_command("vsish", &["-e", "cat", "/hardware/cpu/cpuInfo"]) {
-                Ok(output) => String::from_utf8_lossy(&output.stdout).to_string(),
+                Ok(output) => output,
                 Err(_) => String::new(),
             }
         })
@@ -110,7 +130,7 @@ impl EsxiUtil {
     fn get_cached_cpu_list() -> &'static Vec<String> {
         CACHED_CPU_LIST.get_or_init(|| {
             match Self::execute_command("vsish", &["-e", "ls", "/hardware/msr/pcpu/"]) {
-                Ok(output) => String::from_utf8_lossy(&output.stdout)
+                Ok(output) => output
                     .lines()
                     .map(|line| line.trim_end_matches('/').to_string())
                     .collect(),
@@ -119,14 +139,18 @@ impl EsxiUtil {
         })
     }
 
-    /// Helper to parse values from the CPU topology.
-    fn parse_topology_value(cpu_info: &str, key: &str) -> i32 {
-        cpu_info
-            .lines()
-            .find(|line| line.contains(key))
-            .and_then(|line| line.split(':').nth(1))
-            .and_then(|value| value.trim().parse::<i32>().ok())
-            .unwrap_or(0)
+    /// Retrieves core and socket information for a specific CPU.
+    pub fn get_core_socket_info(cpu: &str) -> (String, String) {
+        let path = format!("/hardware/cpu/cpuList/{}", cpu);
+        match Self::execute_command("vsish", &["-e", "cat", &path]) {
+            Ok(output) => {
+                let core_info = output;
+                let core = Self::parse_core_socket_info(&core_info, "core:");
+                let socket = Self::parse_core_socket_info(&core_info, "package:");
+                (core, socket)
+            }
+            Err(_) => ("N/A".to_string(), "N/A".to_string()),
+        }
     }
 
     /// Retrieves CPU temperature for a specific core.
@@ -134,7 +158,7 @@ impl EsxiUtil {
         let path = format!("/hardware/msr/pcpu/{}/addr/0x19C", cpu);
         match Self::execute_command("vsish", &["-e", "cat", &path]) {
             Ok(output) => {
-                let raw_value = str::from_utf8(&output.stdout).unwrap_or("").trim();
+                let raw_value = output.trim();
                 if Self::validate_hex(raw_value) {
                     if let Ok(raw_value_dec) = i32::from_str_radix(&raw_value[2..], 16) {
                         let digital_readout = (raw_value_dec >> 16) & 0x7F;
@@ -142,11 +166,19 @@ impl EsxiUtil {
                         return (digital_readout.to_string(), temperature.to_string());
                     }
                 }
-                ("N/A".to_string(), "Invalid temperature value".to_string())
+                log::warn!("Invalid temperature value received for CPU {}.", cpu);
+                ("N/A".to_string(), "Invalid temperature".to_string())
             }
-            Err(_) => ("N/A".to_string(), "Error reading MSR".to_string()),
+            Err(_) => {
+                log::error!("Failed to retrieve temperature for CPU {}.", cpu);
+                ("N/A".to_string(), "Error reading MSR".to_string())
+            }
         }
     }
+
+    // -----------------------------------
+    // DTO Construction
+    // -----------------------------------
 
     /// Builds the complete `EsxiSystemDto` for the system using cached data.
     pub fn build_esxi_system_dto() -> EsxiSystemDto {
@@ -155,17 +187,41 @@ impl EsxiUtil {
         let cores_per_socket = cores / sockets.max(1); // Avoid division by zero
         let threads_per_core = threads / cores.max(1);
 
-        let mut cpus = vec![];
-        for cpu in Self::get_cached_cpu_list() {
-            let core_details = Self::get_core_details(cpu, tjmax);
-            let (_, socket) = Self::get_core_socket_info(cpu);
+        let mut physical_cores: HashSet<String> = HashSet::new(); // Track physical cores
+        let mut core_type_cache: HashMap<String, String> = HashMap::new(); // Cache core types
 
-            cpus.push(EsxiCpuDetail {
-                cpu_id: cpu.to_string(),
-                socket_id: socket,
-                cores: core_details,
-            });
-        }
+        let cpus: Vec<EsxiCpuDetail> = Self::get_cached_cpu_list()
+            .iter()
+            .map(|cpu| {
+                let (core, socket) = Self::get_core_socket_info(cpu);
+
+                // Determine core type
+                let core_type: String = if physical_cores.contains(&core) {
+                    "Virtual Thread".to_string()
+                } else {
+                    physical_cores.insert(core.clone());
+                    "Real Core".to_string()
+                };
+
+                core_type_cache.insert(core.clone(), core_type.clone()); // Cache the core type
+
+                let (digital_readout, temperature) = Self::get_cpu_temperature(cpu, tjmax);
+
+                EsxiCpuDetail {
+                    cpu_id: cpu.clone(),
+                    socket_id: socket,
+                    cores: vec![EsxiCoreDetail {
+                        core_id: core,
+                        temperature,
+                        digital_readout,
+                        core_type,
+                    }],
+                }
+            })
+            .collect();
+
+        // Cache the core types globally
+        CACHED_CORE_TYPES.set(core_type_cache).ok();
 
         EsxiSystemDto {
             tjmax,
@@ -177,40 +233,18 @@ impl EsxiUtil {
         }
     }
 
-    /// Retrieves core details for a specific CPU.
-    pub fn get_core_details(cpu: &str, tjmax: i32) -> Vec<EsxiCoreDetail> {
-        let mut core_details = vec![];
-        let (core, _) = Self::get_core_socket_info(cpu);
+    // -----------------------------------
+    // Helper Functions
+    // -----------------------------------
 
-        let (digital_readout, temperature) = Self::get_cpu_temperature(cpu, tjmax);
-        let core_type = if core == "N/A" {
-            "Unknown"
-        } else {
-            "Real Core"
-        };
-
-        core_details.push(EsxiCoreDetail {
-            core_id: core,
-            temperature,
-            digital_readout,
-            core_type: core_type.to_string(),
-        });
-
-        core_details
-    }
-
-    /// Retrieves core and socket information for a specific CPU.
-    pub fn get_core_socket_info(cpu: &str) -> (String, String) {
-        let path = format!("/hardware/cpu/cpuList/{}", cpu);
-        match Self::execute_command("vsish", &["-e", "cat", &path]) {
-            Ok(output) => {
-                let core_info = str::from_utf8(&output.stdout).unwrap_or("");
-                let core = Self::parse_core_socket_info(core_info, "core:");
-                let socket = Self::parse_core_socket_info(core_info, "package:");
-                (core, socket)
-            }
-            Err(_) => ("N/A".to_string(), "N/A".to_string()),
-        }
+    /// Helper to parse topology values from the CPU info.
+    fn parse_topology_value(cpu_info: &str, key: &str) -> i32 {
+        cpu_info
+            .lines()
+            .find(|line| line.contains(key))
+            .and_then(|line| line.split(':').nth(1))
+            .and_then(|value| value.trim().parse::<i32>().ok())
+            .unwrap_or(0)
     }
 
     /// Helper to parse core or socket information.

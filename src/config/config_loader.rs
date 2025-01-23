@@ -116,7 +116,7 @@ impl ConfigLoader {
 
     /// Overrides configuration with command-line arguments if provided.
     fn override_with_cli(&self, config: AppConfig) -> AppConfig {
-        let matches = Command::new("Gilded-Sentinel-Debian")
+        let matches = Command::new("Gilded-Sentinel-Client")
             .arg(
                 Arg::new("server")
                     .long("server")

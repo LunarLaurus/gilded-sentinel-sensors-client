@@ -1,28 +1,37 @@
 [package]
-name = "Gilded-Sentinel-Debian"
+name = "Gilded-Sentinel-Client"
 version = "0.1.10"
 edition = "2021"
-description = "A system monitoring and reporting tool for Debian-based systems."
+description = "A system monitoring and reporting tool for systems with lm-sensors or ESXi 7."
 authors = ["LunarLaurus"]
 repository = "https://github.com/LunarLaurus/gilded-sentinel-sensors-client"
-keywords = ["monitoring", "debian", "system"]
+keywords = ["monitoring", "system", "sensors", "esxi"]
 categories = ["system", "utilities"]
+license = "LGPL-3.0" # License updated to LGPL-3.0
 
+[profile.dev]
+debug = true
+overflow-checks = true
+
+[profile.release]
+debug = true
 
 [dependencies]
-# Argument parsing
-clap = { version = "4.0", features = ["derive"] }
+# --- Core Dependencies ---
+serde = { version = "1.0", features = ["derive"] } # Serialization framework
+serde_json = "1.0"                                # JSON support
+toml = "0.8"                                     # TOML support
 
-# Serialization
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-toml = "0.8"
+# --- Argument Parsing ---
+clap = { version = "4.0", features = ["derive"] } # Command-line argument parsing
 
-# Signal handling for graceful shutdowns
-libc = { version = "0.2", features = ["extra_traits"] }
-signal-hook-registry = "1.4"
-sysinfo = "0.33.1"
+# --- Logging ---
+log = "0.4"              # Logging facade
+env_logger = "0.11"      # Logging implementation with environment configuration
 
-# Logging
-log = "0.4"
-env_logger = "0.11"
+# --- Signal Handling ---
+libc = { version = "0.2", features = ["extra_traits"] } # Low-level system access
+signal-hook-registry = "1.4"                            # Signal handling
+
+# --- System Monitoring ---
+sysinfo = "0.33.1" # Cross-platform system information library

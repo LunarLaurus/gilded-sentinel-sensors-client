@@ -11,13 +11,13 @@ use std::thread;
 use std::time::Duration;
 
 pub fn run_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
-    // Detect environment and delegate to the appropriate loop
+    info!("Detecting environment and delegating.");
     if EsxiUtil::is_running_on_esxi() {
         info!("System detected as running on ESXi.");
         run_esxi_main_loop(&running, &config);
     } else {
-        info!("System detected as running on Debian.");
-        run_debian_main_loop(&running, &config);
+        info!("System detected as running on Linux.");
+        run_linux_main_loop(&running, &config);
     }
 }
 
@@ -45,7 +45,7 @@ fn run_esxi_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
     }
 }
 
-fn run_debian_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
+fn run_linux_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
     let sensors_installed: Result<(), Box<dyn Error>> = ensure_lm_sensors_installed();
 
     if sensors_installed.is_ok() {

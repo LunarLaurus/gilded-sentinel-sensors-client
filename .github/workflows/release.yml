@@ -62,8 +62,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./target/x86_64-unknown-linux-gnu/release/Gilded-Sentinel-Debian
-          asset_name: Gilded-Sentinel-Debian_x86_64-unknown-linux-gnu
+          asset_path: ./target/x86_64-unknown-linux-gnu/release/Gilded-Sentinel-Client
+          asset_name: Gilded-Sentinel-Client_x86_64-unknown-linux-gnu
           asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -100,8 +100,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./target/x86_64-unknown-linux-musl/release/Gilded-Sentinel-Debian
-          asset_name: Gilded-Sentinel-Debian_x86_64-unknown-linux-musl
+          asset_path: ./target/x86_64-unknown-linux-musl/release/Gilded-Sentinel-Client
+          asset_name: Gilded-Sentinel-Client_x86_64-unknown-linux-musl
           asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -138,8 +138,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./target/aarch64-unknown-linux-gnu/release/Gilded-Sentinel-Debian
-          asset_name: Gilded-Sentinel-Debian_aarch64-unknown-linux-gnu
+          asset_path: ./target/aarch64-unknown-linux-gnu/release/Gilded-Sentinel-Client
+          asset_name: Gilded-Sentinel-Client_aarch64-unknown-linux-gnu
           asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -176,8 +176,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./target/armv7-unknown-linux-gnueabihf/release/Gilded-Sentinel-Debian
-          asset_name: Gilded-Sentinel-Debian_armv7-unknown-linux-gnueabihf
+          asset_path: ./target/armv7-unknown-linux-gnueabihf/release/Gilded-Sentinel-Client
+          asset_name: Gilded-Sentinel-Client_armv7-unknown-linux-gnueabihf
           asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

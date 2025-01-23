@@ -3,8 +3,8 @@
 version = 4
 
 [[package]]
-name = "Gilded-Sentinel-Debian"
-version = "0.1.9"
+name = "Gilded-Sentinel-Client"
+version = "0.1.10"
 dependencies = [
  "clap",
  "env_logger",

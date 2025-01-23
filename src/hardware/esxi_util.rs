@@ -1,6 +1,6 @@
 #![cfg(unix)]
 
-use crate::{config::config::Config, system::execution_util::ExecutionUtil};
+use crate::{config::config_instance::Config, system::execution_util::ExecutionUtil};
 use log::{self, debug, info};
 
 /// A utility class for interacting with the ESXi environment.

@@ -6,7 +6,6 @@ use nix::sys::wait::{waitpid, WaitStatus};
 use nix::unistd::{execv, fork, ForkResult};
 use std::ffi::CString;
 use std::process::{Command, Stdio};
-use std::string::FromUtf8Error;
 
 /// Utility class for executing commands in various ways.
 pub struct ExecutionUtil;
@@ -27,6 +26,7 @@ impl ExecutionUtil {
         debug!("Dispatching execution method: `{}`", method);
 
         match method {
+            "debug" => Self::execute_direct_binary(command, args),
             "execv" => Self::execute_with_execv(command, args),
             "libc" => Self::execute_with_libc(command, args),
             "shell" => Self::execute_with_process(command, args, true),
@@ -163,6 +163,21 @@ impl ExecutionUtil {
             Ok(Self::convert_to_string(output.stdout))
         } else {
             Err(Self::convert_to_string(output.stderr))
+        }
+    }
+
+    fn execute_direct_binary(command: &str, args: &[&str]) -> Result<String, String> {
+        let mut cmd = Command::new(command);
+        for arg in args {
+            cmd.arg(arg);
+        }
+    
+        let output = cmd.output().map_err(|e| format!("Failed to execute binary: {}", e))?;
+    
+        if output.status.success() {
+            Ok(String::from_utf8_lossy(&output.stdout).to_string())
+        } else {
+            Err(String::from_utf8_lossy(&output.stderr).to_string())
         }
     }
 

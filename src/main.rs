@@ -12,9 +12,8 @@ mod network;
 mod sensor;
 mod system;
 
-use config::config::Config;
+use config::config_instance::Config;
 use config::config_loader::{initialize_logger, load_application_config};
-use config::AppConfig;
 
 use log::{info, warn};
 use std::sync::{atomic::AtomicBool, Arc};

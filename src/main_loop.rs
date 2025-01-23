@@ -4,7 +4,7 @@
 //! and delegating to the appropriate environment-specific loop.
 #![cfg(unix)]
 
-use crate::config::config::Config;
+use crate::config::config_instance::Config;
 use crate::config::AppConfig;
 use crate::hardware::esxi::Esxi;
 use crate::hardware::system_information_monitor::SysInfoMonitor;

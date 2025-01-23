@@ -8,7 +8,7 @@ use log::{self, debug};
 #[cfg(unix)]
 use log::{info, warn};
 
-use crate::config::config::Config;
+use crate::config::config_instance::Config;
 
 #[cfg(unix)]
 use super::execution_util::ExecutionUtil;
@@ -25,7 +25,7 @@ impl SystemUtil {
 
     /// Checks if the system is running on ESXi by verifying the presence of the `vsish` command.
     pub fn is_running_on_esxi() -> bool {
-        match ExecutionUtil::execute(&Config::execution_method(), "which", &["vsish"]) {
+        match ExecutionUtil::execute(Config::execution_method(), "which", &["vsish"]) {
             Ok(output) => {
                 info!("`which vsish` output: {}", output.trim());
                 true

@@ -7,30 +7,35 @@ mod sensor;
 mod system;
 
 use config::config_loader::{initialize_logger, load_application_config};
+use hardware::esxi::EsxiUtil;
 use log::info;
 use system::signal::setup_signal_handler;
+use std::sync::{atomic::AtomicBool, Arc};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    initialize_logger();
-    info!("Starting the Gilded-Sentinel application...");
 
-    // Load configuration and set up signal handler
-    let config = load_application_config();
-    let running = setup_signal_handler()?;
+    initialize_logger();    
+
+    let running: Arc<AtomicBool>;
+    let is_tty: bool = EsxiUtil::is_tty();
+
+    if is_tty {
+        println!("Running in a Teletype Environment.");
+        running = setup_signal_handler()?;
+    } else {
+        println!("Not running in a Teletype Environment.");
+        running = Arc::new(AtomicBool::new(true));
+    }
+
+    info!("Starting the Gilded-Sentinel application...");
+    let config: config::AppConfig = load_application_config();
 
     info!(
         "Application running with configuration: server = {}, interval_secs = {}",
         config.server, config.interval_secs
     );
 
-    // Detect environment and delegate to the appropriate loop
-    if hardware::esxi::EsxiUtil::is_running_on_esxi() {
-        info!("System detected as running on ESXi.");
-        main_loop::run_esxi_main_loop(&running, &config);
-    } else {
-        info!("System detected as running on Debian.");
-        main_loop::run_debian_main_loop(&running, &config)?;
-    }
+    main_loop::run_main_loop(&running, &config);
 
     info!("Shutting down gracefully.");
     Ok(())

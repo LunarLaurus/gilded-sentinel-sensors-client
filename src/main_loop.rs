@@ -8,7 +8,18 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-pub fn run_esxi_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
+pub fn run_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
+    // Detect environment and delegate to the appropriate loop
+    if EsxiUtil::is_running_on_esxi() {
+        info!("System detected as running on ESXi.");
+        run_esxi_main_loop(&running, &config);
+    } else {
+        info!("System detected as running on Debian.");
+        run_debian_main_loop(&running, &config);
+    }
+}
+
+fn run_esxi_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
     let tjmax = EsxiUtil::get_tjmax();
     let (sockets, cores, threads) = EsxiUtil::get_cpu_topology();
 
@@ -32,7 +43,7 @@ pub fn run_esxi_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
     }
 }
 
-pub fn run_debian_main_loop(
+fn run_debian_main_loop(
     running: &Arc<AtomicBool>,
     config: &AppConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {

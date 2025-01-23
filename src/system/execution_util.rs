@@ -1,14 +1,14 @@
+use log::{debug, error};
+use nix::sys::wait::waitpid;
+use nix::sys::wait::WaitStatus;
+use nix::unistd::{close, pipe};
+use nix::unistd::{fork, ForkResult};
 use std::ffi::CString;
 use std::fs::File;
 use std::io::{self, Read};
 use std::os::fd::FromRawFd;
 use std::process::{Command, Stdio};
 use std::string::FromUtf8Error;
-use nix::unistd::{close, pipe};
-use nix::sys::wait::waitpid;
-use nix::unistd::{fork, ForkResult};
-use nix::sys::wait::WaitStatus;
-use log::{debug, error};
 
 /// A static utility class for executing commands in various ways.
 pub struct ExecutionUtil;
@@ -54,7 +54,10 @@ impl ExecutionUtil {
                 }
             }
             Err(e) => {
-                error!("Failed to execute command: `{}` due to error: {}", command, e);
+                error!(
+                    "Failed to execute command: `{}` due to error: {}",
+                    command, e
+                );
                 Err(e.to_string())
             }
         }
@@ -72,7 +75,10 @@ impl ExecutionUtil {
     /// * `Ok(String)` containing the command's standard output if it succeeds.
     /// * `Err(String)` containing the command's standard error or an execution error message if it fails.
     pub fn execute_with_libc(command: &str, args: &[&str]) -> Result<String, String> {
-        debug!("Executing command with libc: `{}` with args: {:?}", command, args);
+        debug!(
+            "Executing command with libc: `{}` with args: {:?}",
+            command, args
+        );
 
         // Create pipes for stdout and stderr
         let (stdout_read, stdout_write) = pipe().map_err(|e| e.to_string())?;
@@ -119,8 +125,11 @@ impl ExecutionUtil {
                     .iter()
                     .map(|&arg| CString::new(arg).map_err(|e| e.to_string()))
                     .collect::<Result<_, _>>()?;
-                let c_args_ptrs: Vec<*const i8> =
-                    c_args.iter().map(|s| s.as_ptr()).chain(Some(std::ptr::null())).collect();
+                let c_args_ptrs: Vec<*const i8> = c_args
+                    .iter()
+                    .map(|s| s.as_ptr())
+                    .chain(Some(std::ptr::null()))
+                    .collect();
 
                 // Execute the command
                 unsafe { libc::execvp(c_command.as_ptr(), c_args_ptrs.as_ptr()) };
@@ -151,7 +160,10 @@ impl ExecutionUtil {
             return Ok(true);
         }
 
-        Err(format!("Command `{}` does not exist at path: {}", command, path))
+        Err(format!(
+            "Command `{}` does not exist at path: {}",
+            command, path
+        ))
     }
 
     /// Helper method to safely convert `Vec<u8>` to `String` while handling potential errors.

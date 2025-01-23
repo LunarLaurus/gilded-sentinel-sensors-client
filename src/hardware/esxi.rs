@@ -13,7 +13,6 @@ static CACHED_CPU_LIST: OnceLock<Vec<String>> = OnceLock::new();
 static CACHED_TJMAX: OnceLock<i32> = OnceLock::new();
 
 impl EsxiUtil {
-    
     #[cfg(unix)]
     pub fn is_tty() -> bool {
         unsafe { libc::isatty(std::io::stdout().as_raw_fd()) != 0 }

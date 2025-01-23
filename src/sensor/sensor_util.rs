@@ -1,3 +1,5 @@
+#![cfg(unix)]
+
 use log::{error, info};
 use serde::Serialize;
 use std::io;
@@ -11,20 +13,14 @@ use crate::network::network_util::NetworkUtil;
 ///
 /// Provides methods for retrieving and processing sensor data, including execution
 /// of the `sensors` command, parsing the output, and sending data to the server.
+#[allow(dead_code)]
 pub struct SensorUtils;
 
 impl SensorUtils {
     /// Collects CPU package data.
     ///
     /// On Unix-like systems, this executes the `sensors` command and parses its output.
-    /// On Windows, it uses mocked sensor data for testing purposes.
     pub fn collect_cpu_package_data() -> Vec<CpuPackageData> {
-        if cfg!(target_os = "windows") {
-            // Mock sensor data retrieval and parsing for Windows.
-            let mock_data = super::mock::get_mock_sensor_data();
-            return Self::parse_sensor_data(&mock_data);
-        }
-
         // Execute `sensors` command on Unix-like systems.
         match Self::execute_sensors_command() {
             Ok(data) => Self::parse_sensor_data(&data),

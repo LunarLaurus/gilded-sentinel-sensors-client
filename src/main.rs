@@ -13,29 +13,29 @@ mod sensor;
 mod system;
 
 use config::config_loader::{initialize_logger, load_application_config};
-use hardware::esxi_util::EsxiUtil;
+use config::AppConfig;
+
 use log::{info, warn};
 use std::sync::{atomic::AtomicBool, Arc};
-use system::signal::setup_signal_handler;
+use system::{signal::setup_signal_handler, system_util::SystemUtil};
 
 /// Main entry point for the Gilded-Sentinel application.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     initialize_logger();
 
-    let running: Arc<AtomicBool>;
-    EsxiUtil::redirect_to_null();
-    let is_tty: bool = EsxiUtil::is_tty();
+    SystemUtil::redirect_to_null();
+    let is_tty: bool = SystemUtil::is_tty();
 
-    if is_tty {
+    let running: Arc<AtomicBool> = if is_tty {
         info!("Running in a Teletype Environment.");
-        running = setup_signal_handler()?;
+        setup_signal_handler()?
     } else {
         warn!("Not running in a Teletype Environment.");
-        running = Arc::new(AtomicBool::new(true));
-    }
+        Arc::new(AtomicBool::new(true))
+    };
 
     info!("Starting the Gilded-Sentinel-Client application.");
-    let config = load_application_config();
+    let config: config::AppConfig = load_application_config();
 
     info!(
         "Application running with configuration: server = {}, interval_secs = {}",
@@ -43,8 +43,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     info!("Executing Main Loop.");
-    main_loop::run_main_loop(&running, &config);
+    setup(&running, &config);
 
     info!("Shutting down gracefully.");
     Ok(())
+}
+
+
+#[cfg(unix)]
+fn setup(running: &Arc<AtomicBool>, config: &AppConfig) {
+    main_loop::run_main_loop(running, config);
+}
+#[cfg(not(unix))]
+fn setup(_running: &Arc<AtomicBool>, _config: &AppConfig) {
+    
 }

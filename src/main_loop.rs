@@ -2,14 +2,15 @@
 //!
 //! This module handles the main application loop, detecting the runtime environment (ESXi or Linux)
 //! and delegating to the appropriate environment-specific loop.
+#![cfg(unix)]
 
 use crate::config::AppConfig;
 use crate::hardware::esxi::Esxi;
-use crate::hardware::esxi_util::EsxiUtil;
 use crate::hardware::system_information_monitor::SysInfoMonitor;
 use crate::network::network_util::NetworkUtil;
 use crate::sensor::sensor_util::SensorUtils;
-use crate::system::installer::ensure_sensors_installed;
+use crate::system::installer::InstallerUtil;
+use crate::system::system_util::SystemUtil;
 use log::{error, info};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -19,7 +20,7 @@ use std::time::Duration;
 /// Detects the environment and delegates execution to the appropriate loop.
 pub fn run_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
     info!("Detecting environment and delegating.");
-    if EsxiUtil::is_running_on_esxi() {
+    if SystemUtil::is_running_on_esxi() {
         info!("System detected as running on ESXi.");
         run_esxi_main_loop(running, config);
     } else {
@@ -50,9 +51,9 @@ fn run_esxi_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
     }
 }
 
-/// Main loop for Linux systems.
+/// Main loop for Linux/Dev systems.
 fn run_linux_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
-    if !ensure_sensors_installed() {
+    if !InstallerUtil::ensure_sensors_installed() {
         error!("Failed to ensure lm-sensors is installed.");
         return;
     }

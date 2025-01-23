@@ -1,3 +1,5 @@
+#![cfg(unix)]
+
 use log::{debug, error};
 use nix::sys::wait::waitpid;
 use nix::sys::wait::WaitStatus;
@@ -167,7 +169,7 @@ impl ExecutionUtil {
 
                 // Wait for the child process to complete
                 match waitpid(child, None) {
-                    Ok(WaitStatus::Exited(_, status)) if status == 0 => Ok(stdout),
+                    Ok(WaitStatus::Exited(_, 0)) => Ok(stdout),
                     Ok(WaitStatus::Exited(_, _)) => Err(stderr),
                     Ok(_) => Err("Unexpected child process state.".to_string()),
                     Err(e) => Err(format!("Failed to wait for child process: {}", e)),

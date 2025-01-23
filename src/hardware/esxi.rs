@@ -1,3 +1,5 @@
+#![cfg(unix)]
+
 use crate::data::models::{EsxiCoreDetail, EsxiCpuDetail, EsxiSystemDto};
 use std::collections::{HashMap, HashSet};
 use std::str;
@@ -47,19 +49,16 @@ impl Esxi {
     /// Retrieves and caches CPU topology information: number of sockets, cores, and threads.
     pub fn get_cpu_topology() -> (i32, i32, i32) {
         let cpu_info = Self::get_cached_cpu_info();
-        let sockets = Self::parse_topology_value(&cpu_info, "Number of packages");
-        let cores = Self::parse_topology_value(&cpu_info, "Number of cores");
-        let threads = Self::parse_topology_value(&cpu_info, "Number of CPUs (threads)");
+        let sockets = Self::parse_topology_value(cpu_info, "Number of packages");
+        let cores = Self::parse_topology_value(cpu_info, "Number of cores");
+        let threads = Self::parse_topology_value(cpu_info, "Number of CPUs (threads)");
         (sockets, cores, threads)
     }
 
     /// Retrieves and caches CPU information.
     fn get_cached_cpu_info() -> &'static str {
         CACHED_CPU_INFO.get_or_init(|| {
-            match EsxiUtil::execute_command("vsish", &["-e", "cat", "/hardware/cpu/cpuInfo"]) {
-                Ok(output) => output,
-                Err(_) => String::new(),
-            }
+            EsxiUtil::execute_command("vsish", &["-e", "cat", "/hardware/cpu/cpuInfo"]).unwrap_or_default()
         })
     }
 
@@ -196,6 +195,6 @@ impl Esxi {
 
     /// Validates a hexadecimal input string.
     fn validate_hex(input: &str) -> bool {
-        input.starts_with("0x") && input[2..].chars().all(|c| c.is_digit(16))
+        input.starts_with("0x") && input[2..].chars().all(|c| c.is_ascii_hexdigit())
     }
 }

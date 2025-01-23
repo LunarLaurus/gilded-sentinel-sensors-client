@@ -1,3 +1,5 @@
+#![cfg(unix)]
+
 use log::{debug, error, info};
 use serde::Serialize;
 use std::io::{self, Write};

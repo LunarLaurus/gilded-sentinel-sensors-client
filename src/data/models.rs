@@ -129,13 +129,6 @@ impl Uptime {
             total_seconds,
         }
     }
-
-    pub fn to_string(&self) -> String {
-        format!(
-            "{} days {} hours {} minutes {} seconds [{}]",
-            self.days, self.hours, self.minutes, self.seconds, self.total_seconds
-        )
-    }
 }
 
 impl fmt::Display for Uptime {

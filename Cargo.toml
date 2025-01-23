@@ -31,7 +31,7 @@ env_logger = "0.11"      # Logging implementation with environment configuration
 
 # --- Signal Handling ---
 libc = { version = "0.2", features = ["extra_traits"] } # Low-level system access
-nix = "0.26.2"
+nix = "0.29.0"
 signal-hook-registry = "1.4"                            # Signal handling
 
 # --- System Monitoring ---

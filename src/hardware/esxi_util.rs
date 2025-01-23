@@ -1,12 +1,13 @@
+use log::{self, debug, error, info, warn};
+use std::fs::OpenOptions;
+use std::os::fd::AsRawFd;
 use std::process::{Command, Stdio};
 use std::string::FromUtf8Error;
-use log::{self, debug, error, info, warn};
 
 /// A utility class for interacting with the ESXi environment.
 pub struct EsxiUtil;
 
 impl EsxiUtil {
-    
     // -----------------------------------
     // Environment & TTY Checking
     // -----------------------------------
@@ -22,6 +23,20 @@ impl EsxiUtil {
     #[cfg(not(unix))]
     pub fn is_tty() -> bool {
         true
+    }
+
+    pub fn redirect_to_null() {
+
+        let dev_null = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open("/dev/null")
+            .unwrap();
+        unsafe {
+            libc::dup2(dev_null.as_raw_fd(), libc::STDIN_FILENO);
+            //libc::dup2(dev_null.as_raw_fd(), libc::STDOUT_FILENO);
+            //libc::dup2(dev_null.as_raw_fd(), libc::STDERR_FILENO);
+        }
     }
 
     /// Checks if the system is running on ESXi by verifying the presence of the `vsish` command.
@@ -40,11 +55,19 @@ impl EsxiUtil {
 
     /// Executes a command without a TTY, captures output, handles errors, and logs details.
     pub fn execute_command(command: &str, args: &[&str]) -> Result<String, String> {
-        debug!("Attempting to execute command: `{}` with args: {:?}", command, args);
+        debug!(
+            "Attempting to execute command: `{}` with args: {:?}",
+            command, args
+        );
 
-        // Spawn the command and capture output
-        let output_result = Command::new(command)
-            .args(args)
+        // Construct the shell command string
+        let command_str = format!("{} {}", command, args.join(" "));
+        debug!("Executing shell command: {}", command_str);
+
+        // Spawn the command using `sh -c` to avoid TTY assumptions
+        let output_result = Command::new("sh")
+            .arg("-c")
+            .arg(&command_str)
             .stdin(Stdio::null()) // Prevent TTY input
             .stdout(Stdio::piped()) // Capture standard output
             .stderr(Stdio::piped()) // Capture standard error
@@ -55,14 +78,16 @@ impl EsxiUtil {
             Ok(output) => {
                 if output.status.success() {
                     let stdout = Self::convert_to_string(output.stdout);
-                    debug!("Command `{}` succeeded with output: {}", command, stdout);
+                    debug!(
+                        "Command `{}` succeeded with output: {}",
+                        command_str, stdout
+                    );
                     Ok(stdout)
                 } else {
                     let stderr = Self::convert_to_string(output.stderr);
                     error!(
-                        "Command `{}` with args {:?} failed (exit code: {:?}): {}",
-                        command,
-                        args,
+                        "Command `{}` failed with exit code {:?}: {}",
+                        command_str,
                         output.status.code(),
                         stderr
                     );
@@ -71,10 +96,8 @@ impl EsxiUtil {
             }
             Err(e) => {
                 error!(
-                    "Failed to execute command `{}` with args {:?}: {:?}",
-                    command,
-                    args,
-                    e
+                    "Failed to execute command `{}` due to an error: {}",
+                    command_str, e
                 );
                 Err(e.to_string())
             }
@@ -88,31 +111,5 @@ impl EsxiUtil {
             Err(FromUtf8Error { .. }) => "<Invalid UTF-8 Output>".to_string(),
         }
     }
-
-    /// Debugging method to log environment-specific details for deeper analysis.
-    pub fn log_environment_details() {
-        info!("Logging environment details for debugging...");
-        
-        // Check if running as root
-        let user_id = unsafe { libc::geteuid() };
-        if user_id == 0 {
-            info!("Running as root user (UID: 0)");
-        } else {
-            warn!("Not running as root user (UID: {})", user_id);
-        }
-
-        // Log basic system information
-        if let Ok(uname_output) = Self::execute_command("uname", &["-a"]) {
-            info!("System Information (uname -a): {}", uname_output.trim());
-        } else {
-            warn!("Failed to retrieve system information using `uname`.");
-        }
-
-        // Check if `vsish` exists manually
-        if let Ok(_) = Self::execute_command("ls", &["/bin/vsish"]) {
-            info!("`/bin/vsish` exists and is accessible.");
-        } else {
-            warn!("`/bin/vsish` is not found or inaccessible.");
-        }
-    }
+    
 }

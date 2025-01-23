@@ -23,6 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     initialize_logger();
 
     let running: Arc<AtomicBool>;
+    EsxiUtil::redirect_to_null();
     let is_tty: bool = EsxiUtil::is_tty();
 
     if is_tty {

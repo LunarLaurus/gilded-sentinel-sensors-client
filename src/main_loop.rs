@@ -18,7 +18,7 @@ pub fn run_esxi_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
     );
 
     while running.load(Ordering::Relaxed) {
-        // Collect CPU data for all threads        
+        // Collect CPU data for all threads
         let esxi_data = EsxiUtil::build_esxi_system_dto();
 
         // Send the CPU data DTO to the server

@@ -155,5 +155,4 @@ impl ConfigLoader {
             interval_secs,
         }
     }
-    
 }

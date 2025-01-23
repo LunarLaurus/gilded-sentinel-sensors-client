@@ -1,7 +1,7 @@
+use crate::data::models::{EsxiCoreDetail, EsxiCpuDetail, EsxiSystemDto};
 use std::process::Command;
 use std::str;
 use std::sync::OnceLock;
-use crate::data::models::{EsxiCoreDetail, EsxiCpuDetail, EsxiSystemDto};
 
 /// Static utility for ESXi-specific operations.
 pub struct EsxiUtil;
@@ -87,10 +87,7 @@ impl EsxiUtil {
     /// Retrieves CPU temperature for a specific core.
     pub fn get_cpu_temperature(cpu: &str, tjmax: i32) -> (String, String) {
         let path = format!("/hardware/msr/pcpu/{}/addr/0x19C", cpu);
-        if let Ok(output) = Command::new("vsish")
-            .args(&["-e", "cat", &path])
-            .output()
-        {
+        if let Ok(output) = Command::new("vsish").args(&["-e", "cat", &path]).output() {
             let raw_value = str::from_utf8(&output.stdout).unwrap_or("").trim();
             if Self::validate_hex(raw_value) {
                 if let Ok(raw_value_dec) = i32::from_str_radix(&raw_value[2..], 16) {
@@ -138,7 +135,11 @@ impl EsxiUtil {
         let (core, _) = Self::get_core_socket_info(cpu);
 
         let (digital_readout, temperature) = Self::get_cpu_temperature(cpu, tjmax);
-        let core_type = if core == "N/A" { "Unknown" } else { "Real Core" };
+        let core_type = if core == "N/A" {
+            "Unknown"
+        } else {
+            "Real Core"
+        };
 
         core_details.push(EsxiCoreDetail {
             core_id: core,
@@ -153,10 +154,7 @@ impl EsxiUtil {
     /// Retrieves core and socket information for a specific CPU.
     pub fn get_core_socket_info(cpu: &str) -> (String, String) {
         let path = format!("/hardware/cpu/cpuList/{}", cpu);
-        if let Ok(output) = Command::new("vsish")
-            .args(&["-e", "cat", &path])
-            .output()
-        {
+        if let Ok(output) = Command::new("vsish").args(&["-e", "cat", &path]).output() {
             let core_info = str::from_utf8(&output.stdout).unwrap_or("");
             let core = Self::parse_core_socket_info(core_info, "core:");
             let socket = Self::parse_core_socket_info(core_info, "package:");

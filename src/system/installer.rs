@@ -1,5 +1,5 @@
 //! Installer Logic
-//! 
+//!
 //! This module ensures that required system tools (e.g., `lm-sensors`) are installed and available.
 
 #[cfg(unix)]
@@ -93,7 +93,10 @@ mod unix {
         match status {
             Ok(status) => status.success(),
             Err(e) => {
-                eprintln!("Failed to check if command `{}` is available: {}", command, e);
+                eprintln!(
+                    "Failed to check if command `{}` is available: {}",
+                    command, e
+                );
                 false
             }
         }

@@ -1,5 +1,5 @@
 //! Signal Handling
-//! 
+//!
 //! This module handles signal registration for graceful application shutdown.
 
 use signal_hook_registry::register;

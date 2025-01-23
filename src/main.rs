@@ -1,5 +1,5 @@
 //! Gilded-Sentinel-Client Application Entry Point
-//! 
+//!
 //! This file serves as the entry point for the Gilded-Sentinel system monitoring tool. It initializes
 //! the application, sets up signal handling, and delegates execution to the appropriate main loop
 //! based on the environment (e.g., ESXi or Linux).

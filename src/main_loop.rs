@@ -1,5 +1,5 @@
 //! Main Loop Logic
-//! 
+//!
 //! This module handles the main application loop, detecting the runtime environment (ESXi or Linux)
 //! and delegating to the appropriate environment-specific loop.
 

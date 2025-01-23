@@ -30,7 +30,10 @@ impl NetworkUtil {
         for attempt in 1..=retries {
             match Self::send_object_to_server(data, server) {
                 Ok(_) => {
-                    info!("Data successfully sent to the server on attempt {}/{}", attempt, retries);
+                    info!(
+                        "Data successfully sent to the server on attempt {}/{}",
+                        attempt, retries
+                    );
                     return Ok(());
                 }
                 Err(e) => {

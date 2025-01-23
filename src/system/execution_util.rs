@@ -16,7 +16,6 @@ pub struct ExecutionUtil;
 
 #[allow(dead_code)]
 impl ExecutionUtil {
-    
     /// Executes a command without relying on `fork()`, using `libc::system`.
     ///
     /// This is specifically designed for environments like ESXi where `fork()` is unavailable.

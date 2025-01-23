@@ -1,40 +1,39 @@
-use std::io;
+//! Installer Logic
+//! 
+//! This module ensures that required system tools (e.g., `lm-sensors`) are installed and available.
 
 #[cfg(unix)]
 mod unix {
-    use super::*;
     use libc::geteuid;
     use std::process::{Command, Stdio};
 
     /// Ensures the `lm-sensors` package is installed and checks for sudo access if required.
-    pub fn ensure_sensors_installed() -> io::Result<()> {
-        if !is_command_available("sensors")? {
+    pub fn ensure_sensors_installed() -> bool {
+        if !is_command_available("sensors") {
             eprintln!("`sensors` command not found. Attempting to install...");
 
-            if !is_running_as_root() && !has_sudo_access()? {
-                return Err(io::Error::new(
-                    io::ErrorKind::PermissionDenied,
-                    "Sudo privileges are required to install `lm-sensors`. Please run with sudo or contact your system administrator.",
-                ));
+            if !is_running_as_root() && !has_sudo_access() {
+                eprintln!(
+                    "Sudo privileges are required to install `lm-sensors`. Please run with sudo or contact your system administrator."
+                );
+                return false;
             }
 
-            if install_lm_sensors()? {
+            if install_lm_sensors() {
                 eprintln!("`lm-sensors` successfully installed.");
+                return true;
             } else {
-                return Err(io::Error::new(
-                    io::ErrorKind::Other,
-                    "`lm-sensors` installation failed.",
-                ));
+                eprintln!("`lm-sensors` installation failed.");
+                return false;
             }
         } else {
             eprintln!("`sensors` command is already installed.");
+            true
         }
-
-        Ok(())
     }
 
     /// Installs the `lm-sensors` package using `apt-get`. Avoids using `sudo` if already running as root.
-    fn install_lm_sensors() -> io::Result<bool> {
+    fn install_lm_sensors() -> bool {
         let mut command = if is_running_as_root() {
             Command::new("apt-get")
         } else {
@@ -42,31 +41,39 @@ mod unix {
             cmd.arg("apt-get");
             cmd
         };
+
         let status = command
             .arg("install")
             .arg("-y")
             .arg("lm-sensors")
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
-            .status()?;
+            .status();
 
-        Ok(status.success())
+        match status {
+            Ok(status) => status.success(),
+            Err(e) => {
+                eprintln!("Failed to execute installation command: {}", e);
+                false
+            }
+        }
     }
 
     /// Checks if the user has sudo access.
-    fn has_sudo_access() -> io::Result<bool> {
-        match Command::new("sudo")
+    fn has_sudo_access() -> bool {
+        let status = Command::new("sudo")
             .arg("-n") // Do not prompt for a password
             .arg("true")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .status()
-        {
-            Ok(status) => Ok(status.success()),
-            Err(e) => Err(io::Error::new(
-                io::ErrorKind::Other,
-                format!("Failed to check sudo access: {}", e),
-            )),
+            .status();
+
+        match status {
+            Ok(status) => status.success(),
+            Err(e) => {
+                eprintln!("Failed to check sudo access: {}", e);
+                false
+            }
         }
     }
 
@@ -76,14 +83,20 @@ mod unix {
     }
 
     /// Checks if a command is available in the system.
-    fn is_command_available(command: &str) -> io::Result<bool> {
+    fn is_command_available(command: &str) -> bool {
         let status = Command::new("which")
             .arg(command)
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .status()?;
+            .status();
 
-        Ok(status.success())
+        match status {
+            Ok(status) => status.success(),
+            Err(e) => {
+                eprintln!("Failed to check if command `{}` is available: {}", command, e);
+                false
+            }
+        }
     }
 }
 
@@ -92,9 +105,9 @@ mod windows {
     use super::*;
 
     /// Mocked implementation for `ensure_sensors_installed` for Windows development builds.
-    pub fn ensure_sensors_installed() -> io::Result<()> {
-        // No-op for Windows, always succeeds in mock.
-        Ok(())
+    pub fn ensure_sensors_installed() -> bool {
+        // No-op for Windows, always returns true.
+        true
     }
 }
 

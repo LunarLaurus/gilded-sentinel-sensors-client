@@ -4,13 +4,20 @@ use std::env;
 use std::fs;
 use std::path::Path;
 
+/// Application configuration structure.
+///
+/// This structure holds configuration values for the Gilded-Sentinel application,
+/// such as the server address and data collection interval.
 #[derive(Debug, serde::Deserialize)]
 pub struct AppConfig {
+    /// Server address to which the application will send data (e.g., `127.0.0.1:5000`).
     pub server: String,
+    /// Interval in seconds between data collection.
     pub interval_secs: u64,
 }
 
 impl Default for AppConfig {
+    /// Provides default values for the application configuration.
     fn default() -> Self {
         Self {
             server: "127.0.0.1:5000".to_string(),
@@ -19,22 +26,38 @@ impl Default for AppConfig {
     }
 }
 
+/// Configuration loader for the Gilded-Sentinel application.
+///
+/// This loader retrieves configuration values from multiple sources, such as:
+/// - Configuration files (`config.toml`)
+/// - Environment variables
+/// - Command-line arguments
 pub struct ConfigLoader {
     exe_dir: String,
 }
 
+/// Initializes the logger for the application.
+///
+/// This function sets up the `env_logger` backend to handle logging, allowing
+/// log levels to be dynamically adjusted via environment variables (e.g., `RUST_LOG`).
 pub fn initialize_logger() {
     env_logger::Builder::from_default_env()
         .filter_level(log::LevelFilter::Info)
         .init();
 }
 
+/// Loads the application configuration by using the `ConfigLoader`.
+///
+/// This function acts as a simple entry point for loading the configuration,
+/// combining values from files, environment variables, and command-line arguments.
 pub fn load_application_config() -> AppConfig {
-    crate::config::config_loader::ConfigLoader::new().load_config()
+    ConfigLoader::new().load_config()
 }
 
 impl ConfigLoader {
-    /// Creates a new ConfigLoader with the executable's directory.
+    /// Creates a new `ConfigLoader` instance with the executable's directory.
+    ///
+    /// This ensures that configuration files can be loaded relative to the executable's location.
     pub fn new() -> Self {
         let exe_dir = env::current_exe()
             .ok()
@@ -44,7 +67,12 @@ impl ConfigLoader {
         Self { exe_dir }
     }
 
-    /// Load the final application configuration.
+    /// Loads the complete application configuration by combining:
+    /// 1. Configuration file (`config.toml`).
+    /// 2. Environment variables (`SENSOR_SERVER`, `SENSOR_INTERVAL`).
+    /// 3. Command-line arguments (`--server`, `--interval`).
+    ///
+    /// Returns the final `AppConfig`.
     pub fn load_config(&self) -> AppConfig {
         info!("Starting configuration loading process.");
 
@@ -68,7 +96,10 @@ impl ConfigLoader {
         final_config
     }
 
-    /// Loads configuration from `config.toml` in the local directory.
+    /// Loads configuration from the `config.toml` file in the executable's directory.
+    ///
+    /// If the file is not found or cannot be parsed, this function logs the error
+    /// and returns `None`.
     fn load_from_file(&self) -> Option<AppConfig> {
         let config_path = Path::new(&self.exe_dir).join("config.toml");
 
@@ -93,7 +124,12 @@ impl ConfigLoader {
         }
     }
 
-    /// Overrides configuration with environment variables if set.
+    /// Overrides the provided configuration with values from environment variables.
+    ///
+    /// - `SENSOR_SERVER`: Overrides the `server` value.
+    /// - `SENSOR_INTERVAL`: Overrides the `interval_secs` value.
+    ///
+    /// Logs any overridden values for traceability.
     fn override_with_env(&self, config: AppConfig) -> AppConfig {
         let server = env::var("SENSOR_SERVER").unwrap_or_else(|_| config.server.clone());
         let interval_secs = env::var("SENSOR_INTERVAL")
@@ -114,7 +150,13 @@ impl ConfigLoader {
         }
     }
 
-    /// Overrides configuration with command-line arguments if provided.
+    /// Overrides the provided configuration with values from command-line arguments.
+    ///
+    /// Supported arguments:
+    /// - `--server`: Overrides the `server` value.
+    /// - `--interval`: Overrides the `interval_secs` value.
+    ///
+    /// Logs any overridden values for traceability.
     fn override_with_cli(&self, config: AppConfig) -> AppConfig {
         let matches = Command::new("Gilded-Sentinel-Client")
             .arg(

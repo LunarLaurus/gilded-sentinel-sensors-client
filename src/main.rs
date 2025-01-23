@@ -1,3 +1,9 @@
+//! Gilded-Sentinel-Client Application Entry Point
+//! 
+//! This file serves as the entry point for the Gilded-Sentinel system monitoring tool. It initializes
+//! the application, sets up signal handling, and delegates execution to the appropriate main loop
+//! based on the environment (e.g., ESXi or Linux).
+
 mod config;
 mod data;
 mod hardware;
@@ -12,6 +18,7 @@ use log::{info, warn};
 use std::sync::{atomic::AtomicBool, Arc};
 use system::signal::setup_signal_handler;
 
+/// Main entry point for the Gilded-Sentinel application.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     initialize_logger();
 
@@ -26,8 +33,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         running = Arc::new(AtomicBool::new(true));
     }
 
-    info!("Starting the Gilded-Sentinel application.");
-    let config: config::AppConfig = load_application_config();
+    info!("Starting the Gilded-Sentinel-Client application.");
+    let config = load_application_config();
 
     info!(
         "Application running with configuration: server = {}, interval_secs = {}",

@@ -1,8 +1,8 @@
-use log::{self, debug, error, info, warn};
+use log::{self, debug, info, warn};
 use std::fs::OpenOptions;
 use std::os::fd::AsRawFd;
-use std::process::{Command, Stdio};
-use std::string::FromUtf8Error;
+
+use crate::system::execution_util::ExecutionUtil;
 
 /// A utility class for interacting with the ESXi environment.
 pub struct EsxiUtil;
@@ -52,62 +52,24 @@ impl EsxiUtil {
         }
     }
 
-    /// Executes a command without a TTY, captures output, handles errors, and logs details.
-    pub fn execute_command(command: &str, args: &[&str]) -> Result<String, String> {
-        debug!(
-            "Attempting to execute command: `{}` with args: {:?}",
-            command, args
-        );
+/// Executes a command without a TTY, captures output, handles errors, and logs details.
+pub fn execute_command(command: &str, args: &[&str]) -> Result<String, String> {
+    debug!(
+        "Attempting to execute command: `{}` with args: {:?}",
+        command, args
+    );
 
-        // Construct the shell command string
-        let command_str = format!("{} {}", command, args.join(" "));
-        debug!("Executing shell command: {}", command_str);
-
-        // Spawn the command using `sh -c` to avoid TTY assumptions
-        let output_result = Command::new("sh")
-            .arg("-c")
-            .arg(&command_str)
-            .stdin(Stdio::null()) // Prevent TTY input
-            .stdout(Stdio::piped()) // Capture standard output
-            .stderr(Stdio::piped()) // Capture standard error
-            .output();
-
-        // Analyze the output
-        match output_result {
-            Ok(output) => {
-                if output.status.success() {
-                    let stdout = Self::convert_to_string(output.stdout);
-                    debug!(
-                        "Command `{}` succeeded with output: {}",
-                        command_str, stdout
-                    );
-                    Ok(stdout)
-                } else {
-                    let stderr = Self::convert_to_string(output.stderr);
-                    error!(
-                        "Command `{}` failed with exit code {:?}: {}",
-                        command_str,
-                        output.status.code(),
-                        stderr
-                    );
-                    Err(stderr)
-                }
-            }
-            Err(e) => {
-                error!(
-                    "Failed to execute command `{}` due to an error: {}",
-                    command_str, e
-                );
-                Err(e.to_string())
-            }
+    // Call the utility function and handle its result
+    match ExecutionUtil::execute_with_libc(command, args) {
+        Ok(output) => {
+            info!("Command succeeded with output: {}", output);
+            Ok(output) // Return the success result
+        }
+        Err(error) => {
+            info!("Command failed with error: {}", error);
+            Err(error) // Return the error result
         }
     }
+}
 
-    /// Helper method to safely convert `Vec<u8>` to `String` while handling potential errors.
-    fn convert_to_string(output: Vec<u8>) -> String {
-        match String::from_utf8(output) {
-            Ok(s) => s,
-            Err(FromUtf8Error { .. }) => "<Invalid UTF-8 Output>".to_string(),
-        }
-    }
 }

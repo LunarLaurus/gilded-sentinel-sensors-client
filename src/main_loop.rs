@@ -4,6 +4,7 @@
 //! and delegating to the appropriate environment-specific loop.
 #![cfg(unix)]
 
+use crate::config::config::Config;
 use crate::config::AppConfig;
 use crate::hardware::esxi::Esxi;
 use crate::hardware::system_information_monitor::SysInfoMonitor;
@@ -18,14 +19,14 @@ use std::thread;
 use std::time::Duration;
 
 /// Detects the environment and delegates execution to the appropriate loop.
-pub fn run_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
+pub fn run_main_loop(running: &Arc<AtomicBool>) {
     info!("Detecting environment and delegating.");
     if SystemUtil::is_running_on_esxi() {
         info!("System detected as running on ESXi.");
-        run_esxi_main_loop(running, config);
+        run_esxi_main_loop(running, Config::get());
     } else {
         info!("System detected as running on Linux.");
-        run_linux_main_loop(running, config);
+        run_linux_main_loop(running, Config::get());
     }
 }
 

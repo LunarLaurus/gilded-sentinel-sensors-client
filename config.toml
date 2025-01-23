@@ -1,2 +1,3 @@
 server = "localhost:5000"
 interval_secs = 10
+execution_method = "std_command"

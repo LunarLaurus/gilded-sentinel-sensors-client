@@ -1,6 +1,6 @@
 #![cfg(unix)]
 
-use crate::system::execution_util::ExecutionUtil;
+use crate::{config::config::Config, system::execution_util::ExecutionUtil};
 use log::{self, debug, info};
 
 /// A utility class for interacting with the ESXi environment.
@@ -16,7 +16,7 @@ impl EsxiUtil {
         );
 
         // Call the utility function and handle its result
-        match ExecutionUtil::execute_no_fork(command, args) {
+        match ExecutionUtil::execute(Config::execution_method(), command, args) {
             Ok(output) => {
                 info!("Command succeeded with output: {}", output);
                 Ok(output) // Return the success result

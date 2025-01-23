@@ -7,13 +7,15 @@ use std::path::Path;
 /// Application configuration structure.
 ///
 /// This structure holds configuration values for the Gilded-Sentinel application,
-/// such as the server address and data collection interval.
+/// such as the server address, data collection interval, and execution method.
 #[derive(Debug, serde::Deserialize)]
 pub struct AppConfig {
     /// Server address to which the application will send data (e.g., `127.0.0.1:5000`).
     pub server: String,
     /// Interval in seconds between data collection.
     pub interval_secs: u64,
+    /// Command execution method (e.g., "std_command", "execv").
+    pub execution_method: String,
 }
 
 impl Default for AppConfig {
@@ -22,6 +24,7 @@ impl Default for AppConfig {
         Self {
             server: "127.0.0.1:5000".to_string(),
             interval_secs: 10,
+            execution_method: "std_command".to_string(),
         }
     }
 }
@@ -34,24 +37,6 @@ impl Default for AppConfig {
 /// - Command-line arguments
 pub struct ConfigLoader {
     exe_dir: String,
-}
-
-/// Initializes the logger for the application.
-///
-/// This function sets up the `env_logger` backend to handle logging, allowing
-/// log levels to be dynamically adjusted via environment variables (e.g., `RUST_LOG`).
-pub fn initialize_logger() {
-    env_logger::Builder::from_default_env()
-        .filter_level(log::LevelFilter::Info)
-        .init();
-}
-
-/// Loads the application configuration by using the `ConfigLoader`.
-///
-/// This function acts as a simple entry point for loading the configuration,
-/// combining values from files, environment variables, and command-line arguments.
-pub fn load_application_config() -> AppConfig {
-    ConfigLoader::new().load_config()
 }
 
 impl ConfigLoader {
@@ -69,8 +54,8 @@ impl ConfigLoader {
 
     /// Loads the complete application configuration by combining:
     /// 1. Configuration file (`config.toml`).
-    /// 2. Environment variables (`SENSOR_SERVER`, `SENSOR_INTERVAL`).
-    /// 3. Command-line arguments (`--server`, `--interval`).
+    /// 2. Environment variables.
+    /// 3. Command-line arguments.
     ///
     /// Returns the final `AppConfig`.
     pub fn load_config(&self) -> AppConfig {
@@ -89,8 +74,8 @@ impl ConfigLoader {
         let final_config = self.override_with_cli(env_config);
 
         info!(
-            "Final configuration: server = {}, interval_secs = {}",
-            final_config.server, final_config.interval_secs
+            "Final configuration: server = {}, interval_secs = {}, execution_method = {}",
+            final_config.server, final_config.interval_secs, final_config.execution_method
         );
 
         final_config
@@ -126,8 +111,10 @@ impl ConfigLoader {
 
     /// Overrides the provided configuration with values from environment variables.
     ///
+    /// Supported environment variables:
     /// - `SENSOR_SERVER`: Overrides the `server` value.
     /// - `SENSOR_INTERVAL`: Overrides the `interval_secs` value.
+    /// - `SENSOR_EXECUTION_METHOD`: Overrides the `execution_method` value.
     ///
     /// Logs any overridden values for traceability.
     fn override_with_env(&self, config: AppConfig) -> AppConfig {
@@ -136,6 +123,8 @@ impl ConfigLoader {
             .ok()
             .and_then(|val| val.parse().ok())
             .unwrap_or(config.interval_secs);
+        let execution_method =
+            env::var("SENSOR_EXECUTION_METHOD").unwrap_or_else(|_| config.execution_method.clone());
 
         if server != config.server {
             info!("Server address overridden by environment variable.");
@@ -143,10 +132,14 @@ impl ConfigLoader {
         if interval_secs != config.interval_secs {
             info!("Interval overridden by environment variable.");
         }
+        if execution_method != config.execution_method {
+            info!("Execution method overridden by environment variable.");
+        }
 
         AppConfig {
             server,
             interval_secs,
+            execution_method,
         }
     }
 
@@ -155,6 +148,7 @@ impl ConfigLoader {
     /// Supported arguments:
     /// - `--server`: Overrides the `server` value.
     /// - `--interval`: Overrides the `interval_secs` value.
+    /// - `--execution-method`: Overrides the `execution_method` value.
     ///
     /// Logs any overridden values for traceability.
     fn override_with_cli(&self, config: AppConfig) -> AppConfig {
@@ -162,7 +156,7 @@ impl ConfigLoader {
             .arg(
                 Arg::new("server")
                     .long("server")
-                    .help("Server address (e.g., 127.0.0.1:5000)")
+                    .help("Server address to send data (e.g., 127.0.0.1:5000)")
                     .value_parser(clap::value_parser!(String)),
             )
             .arg(
@@ -170,6 +164,12 @@ impl ConfigLoader {
                     .long("interval")
                     .help("Interval in seconds between data collection")
                     .value_parser(clap::value_parser!(u64)),
+            )
+            .arg(
+                Arg::new("execution-method")
+                    .long("execution-method")
+                    .help("Command execution method: [std_command (default), no_fork, execv, libc, direct_check]")
+                    .value_parser(clap::value_parser!(String)),
             )
             .get_matches();
 
@@ -185,16 +185,43 @@ impl ConfigLoader {
             .copied()
             .unwrap_or(config.interval_secs);
 
+        let execution_method = matches
+            .get_one::<String>("execution-method")
+            .unwrap_or(&config.execution_method)
+            .to_string();
+
         if server != config.server {
             info!("Server address overridden by command-line argument.");
         }
         if interval_secs != config.interval_secs {
             info!("Interval overridden by command-line argument.");
         }
+        if execution_method != config.execution_method {
+            info!("Execution method overridden by command-line argument.");
+        }
 
         AppConfig {
             server,
             interval_secs,
+            execution_method,
         }
     }
+}
+
+/// Initializes the logger for the application.
+///
+/// This function sets up the `env_logger` backend to handle logging, allowing
+/// log levels to be dynamically adjusted via environment variables (e.g., `RUST_LOG`).
+pub fn initialize_logger() {
+    env_logger::Builder::from_default_env()
+        .filter_level(log::LevelFilter::Info)
+        .init();
+}
+
+/// Loads the application configuration by using the `ConfigLoader`.
+///
+/// This function acts as a simple entry point for loading the configuration,
+/// combining values from files, environment variables, and command-line arguments.
+pub fn load_application_config() -> AppConfig {
+    ConfigLoader::new().load_config()
 }

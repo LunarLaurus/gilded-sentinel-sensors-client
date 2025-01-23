@@ -1,11 +1,12 @@
 use std::process::Command;
 use std::str;
+use crate::data::models::{EsxiCoreDetail, EsxiCpuDetail, EsxiSystemDto};
 
-/// Utility for detecting ESXi and retrieving system information.
+/// Static utility for ESXi-specific operations.
 pub struct EsxiUtil;
 
 impl EsxiUtil {
-    /// Checks if the system is running on ESXi by testing for the `vsish` command.
+    /// Checks if the system is running on ESXi by verifying the presence of the `vsish` command.
     pub fn is_running_on_esxi() -> bool {
         Command::new("which")
             .arg("vsish")
@@ -14,7 +15,7 @@ impl EsxiUtil {
             .unwrap_or(false)
     }
 
-    /// Reads and calculates the TjMax value for ESXi.
+    /// Retrieves the TjMax value for the system.
     pub fn get_tjmax() -> i32 {
         if let Ok(output) = Command::new("vsish")
             .args(&["-e", "cat", "/hardware/msr/pcpu/0/addr/0x1A2"])
@@ -29,7 +30,7 @@ impl EsxiUtil {
         100 // Default TjMax value
     }
 
-    /// Retrieves CPU topology information from ESXi.
+    /// Retrieves CPU topology information: number of sockets, cores, and threads.
     pub fn get_cpu_topology() -> (i32, i32, i32) {
         if let Ok(output) = Command::new("vsish")
             .args(&["-e", "cat", "/hardware/cpu/cpuInfo"])
@@ -60,6 +61,24 @@ impl EsxiUtil {
             return (sockets, cores, threads);
         }
         (0, 0, 0) // Default values
+    }
+
+    /// Retrieves core details for a specific CPU.
+    pub fn get_core_details(cpu: &str, tjmax: i32) -> Vec<EsxiCoreDetail> {
+        let mut core_details = vec![];
+        let (core, _) = Self::get_core_socket_info(cpu);
+
+        let (digital_readout, temperature) = Self::get_cpu_temperature(cpu, tjmax);
+        let core_type = if core == "N/A" { "Unknown" } else { "Real Core" };
+
+        core_details.push(EsxiCoreDetail {
+            core_id: core,
+            temperature,
+            digital_readout,
+            core_type: core_type.to_string(),
+        });
+
+        core_details
     }
 
     /// Retrieves core and socket information for a specific CPU.
@@ -107,6 +126,42 @@ impl EsxiUtil {
             }
         }
         ("N/A".to_string(), "Error reading MSR".to_string())
+    }
+
+    /// Builds the complete `EsxiSystemDto` for the system.
+    pub fn build_esxi_system_dto() -> EsxiSystemDto {
+        let tjmax = Self::get_tjmax();
+        let (sockets, cores, threads) = Self::get_cpu_topology();
+        let cores_per_socket = cores / sockets;
+        let threads_per_core = threads / cores;
+
+        let mut cpus = vec![];
+
+        if let Ok(output) = Command::new("vsish")
+            .args(&["-e", "ls", "/hardware/msr/pcpu/"])
+            .output()
+        {
+            let cpu_list = str::from_utf8(&output.stdout).unwrap_or("");
+            for cpu in cpu_list.lines().map(|line| line.trim_end_matches('/')) {
+                let core_details = Self::get_core_details(cpu, tjmax);
+                let (_, socket) = Self::get_core_socket_info(cpu);
+
+                cpus.push(EsxiCpuDetail {
+                    cpu_id: cpu.to_string(),
+                    socket_id: socket,
+                    cores: core_details,
+                });
+            }
+        }
+
+        EsxiSystemDto {
+            tjmax,
+            sockets,
+            cores_per_socket,
+            threads_per_core,
+            logical_processors: threads,
+            cpus,
+        }
     }
 
     /// Validates a hexadecimal input string.

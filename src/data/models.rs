@@ -2,7 +2,33 @@ use serde::Serialize;
 use std::fmt;
 use sysinfo::Component;
 
-/// Represents individual CPU core data.
+// ESXi DTOs
+#[derive(Clone, Debug, Serialize)]
+pub struct EsxiCoreDetail {
+    pub core_id: String,
+    pub temperature: String,
+    pub digital_readout: String,
+    pub core_type: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct EsxiCpuDetail {
+    pub cpu_id: String,
+    pub socket_id: String,
+    pub cores: Vec<EsxiCoreDetail>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct EsxiSystemDto {
+    pub tjmax: i32,
+    pub sockets: i32,
+    pub cores_per_socket: i32,
+    pub threads_per_core: i32,
+    pub logical_processors: i32,
+    pub cpus: Vec<EsxiCpuDetail>,
+}
+
+// General System DTOs
 #[derive(Serialize, Debug)]
 pub struct CpuCoreData {
     pub core_name: String,
@@ -11,7 +37,6 @@ pub struct CpuCoreData {
     pub critical_threshold: f32,
 }
 
-/// Represents CPU package data.
 #[derive(Serialize, Debug)]
 pub struct CpuPackageData {
     pub package_id: String,
@@ -22,7 +47,6 @@ pub struct CpuPackageData {
     pub cores: Vec<CpuCoreData>,
 }
 
-/// Represents memory usage information.
 #[derive(Serialize, Debug)]
 pub struct MemoryInfo {
     pub total: u64,
@@ -31,7 +55,6 @@ pub struct MemoryInfo {
     pub used_swap: u64,
 }
 
-/// Represents CPU information, including usage and architecture.
 #[derive(Serialize, Debug)]
 pub struct CpuInfo {
     pub usage_per_core: Vec<f32>,
@@ -39,7 +62,6 @@ pub struct CpuInfo {
     pub cpu_arch: String,
 }
 
-/// Represents disk usage information.
 #[derive(Serialize, Debug)]
 pub struct DiskInfo {
     pub name: String,
@@ -49,7 +71,6 @@ pub struct DiskInfo {
     pub written_bytes: u64,
 }
 
-/// Represents network usage information.
 #[derive(Serialize, Debug)]
 pub struct NetworkInfo {
     pub interface_name: String,
@@ -58,7 +79,6 @@ pub struct NetworkInfo {
     pub mtu: Option<u64>,
 }
 
-/// Represents information about a single process.
 #[derive(Serialize, Debug)]
 pub struct ProcessInfo {
     pub name: String,
@@ -66,7 +86,6 @@ pub struct ProcessInfo {
     pub memory: u64,
 }
 
-/// Represents detailed information about a system component.
 #[derive(Serialize, Debug)]
 pub struct ComponentInfo {
     pub label: String,
@@ -86,7 +105,6 @@ impl From<&Component> for ComponentInfo {
     }
 }
 
-/// Represents system uptime.
 #[derive(Serialize, Debug)]
 pub struct Uptime {
     pub days: u64,
@@ -130,7 +148,6 @@ impl fmt::Display for Uptime {
     }
 }
 
-/// Represents the complete sensor data for the system, including all relevant DTOs.
 #[derive(Serialize, Debug)]
 pub struct SensorData {
     pub uptime: Uptime,

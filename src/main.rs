@@ -13,6 +13,7 @@ use crate::hardware::system_information_monitor::SysInfoMonitor;
 // Networking
 use crate::network::network_util::NetworkUtil;
 
+use data::models::EsxiCpuDetail;
 use hardware::esxi::EsxiUtil;
 use log::{error, info};
 use signal_hook_registry::register;
@@ -59,25 +60,11 @@ fn run_esxi_main_loop(running: &Arc<AtomicBool>, config: &config::AppConfig) {
     );
 
     while running.load(Ordering::Relaxed) {
-        // Collect CPU data for all threads
-        let mut cpu_data = vec![];
-
-        for cpu in 0..threads {
-            let cpu_str = cpu.to_string();
-            let (core, socket) = EsxiUtil::get_core_socket_info(&cpu_str);
-            let (digital_readout, temperature) = EsxiUtil::get_cpu_temperature(&cpu_str, tjmax);
-
-            cpu_data.push(crate::data::models::CpuData {
-                cpu: cpu_str,
-                core,
-                socket,
-                digital_readout,
-                temperature,
-            });
-        }
+        // Collect CPU data for all threads        
+        let esxi_data = EsxiUtil::build_esxi_system_dto();
 
         // Send the CPU data DTO to the server
-        match NetworkUtil::send_with_retries(&cpu_data, &config.server, 3) {
+        match NetworkUtil::send_with_retries(&esxi_data, &config.server, 3) {
             Ok(_) => info!("ESXi CPU data sent successfully."),
             Err(e) => error!("Failed to send ESXi CPU data: {}", e),
         }

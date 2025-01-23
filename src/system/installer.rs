@@ -4,9 +4,9 @@
 //!
 //! This module ensures that required system tools (e.g., `lm-sensors`) are installed and available.
 
+use crate::system::execution_util::ExecutionUtil;
 use libc::geteuid;
 use log::{error, info, warn};
-use crate::system::execution_util::ExecutionUtil;
 
 /// A utility class for ensuring system tools are installed (Unix-specific).
 pub struct InstallerUtil;
@@ -81,7 +81,10 @@ impl InstallerUtil {
         match ExecutionUtil::execute_with_command("which", &[command]) {
             Ok(_) => true,
             Err(e) => {
-                error!("Failed to check if command `{}` is available: {}", command, e);
+                error!(
+                    "Failed to check if command `{}` is available: {}",
+                    command, e
+                );
                 false
             }
         }

@@ -3,10 +3,10 @@ use std::fs::OpenOptions;
 #[cfg(unix)]
 use std::os::fd::AsRawFd;
 
-#[cfg(unix)]
-use log::{info, warn};
 #[cfg(not(unix))]
 use log::{self, debug};
+#[cfg(unix)]
+use log::{info, warn};
 
 #[cfg(unix)]
 use super::execution_util::ExecutionUtil;

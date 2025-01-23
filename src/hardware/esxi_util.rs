@@ -1,14 +1,13 @@
 #![cfg(unix)]
 
-use log::{self, info, debug};
 use crate::system::execution_util::ExecutionUtil;
+use log::{self, debug, info};
 
 /// A utility class for interacting with the ESXi environment.
 pub struct EsxiUtil;
 
 // Unix-specific implementations
 impl EsxiUtil {
-
     /// Executes a command without a TTY, captures output, handles errors, and logs details.
     pub fn execute_command(command: &str, args: &[&str]) -> Result<String, String> {
         debug!(

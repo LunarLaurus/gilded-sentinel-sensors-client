@@ -49,12 +49,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-
 #[cfg(unix)]
 fn setup(running: &Arc<AtomicBool>, config: &AppConfig) {
     main_loop::run_main_loop(running, config);
 }
 #[cfg(not(unix))]
-fn setup(_running: &Arc<AtomicBool>, _config: &AppConfig) {
-    
-}
+fn setup(_running: &Arc<AtomicBool>, _config: &AppConfig) {}

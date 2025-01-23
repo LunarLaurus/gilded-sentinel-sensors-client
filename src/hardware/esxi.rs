@@ -58,7 +58,8 @@ impl Esxi {
     /// Retrieves and caches CPU information.
     fn get_cached_cpu_info() -> &'static str {
         CACHED_CPU_INFO.get_or_init(|| {
-            EsxiUtil::execute_command("vsish", &["-e", "cat", "/hardware/cpu/cpuInfo"]).unwrap_or_default()
+            EsxiUtil::execute_command("vsish", &["-e", "cat", "/hardware/cpu/cpuInfo"])
+                .unwrap_or_default()
         })
     }
 

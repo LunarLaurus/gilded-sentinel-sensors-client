@@ -5,13 +5,6 @@ use std::os::fd::AsRawFd;
 
 #[cfg(not(unix))]
 use log::{self, debug};
-#[cfg(unix)]
-use log::{info, warn};
-
-use crate::config::config_instance::Config;
-
-#[cfg(unix)]
-use super::execution_util::ExecutionUtil;
 
 /// A utility class for interacting with the system.
 pub struct SystemUtil;
@@ -21,20 +14,6 @@ impl SystemUtil {
     /// Checks if the program is running in a TTY environment (Unix-based).
     pub fn is_tty() -> bool {
         unsafe { libc::isatty(std::io::stdout().as_raw_fd()) != 0 }
-    }
-
-    /// Checks if the system is running on ESXi by verifying the presence of the `vsish` command.
-    pub fn is_running_on_esxi() -> bool {
-        match ExecutionUtil::execute(Config::execution_method(), "which", &["vsish"]) {
-            Ok(output) => {
-                info!("`which vsish` output: {}", output.trim());
-                true
-            }
-            Err(error) => {
-                warn!("Failed to detect ESXi environment: {}", error);
-                false
-            }
-        }
     }
 
     /// Redirects input, output, and error streams to `/dev/null` (Unix-based).
@@ -60,12 +39,6 @@ impl SystemUtil {
     pub fn is_tty() -> bool {
         debug!("is_tty is a no-op on non-Unix platforms.");
         true
-    }
-
-    /// Mock for checking if running on ESXi on non-Unix platforms.
-    pub fn is_running_on_esxi() -> bool {
-        debug!("is_running_on_esxi is a no-op on non-Unix platforms.");
-        false
     }
 
     /// Mock for redirecting streams to `/dev/null` on non-Unix platforms.

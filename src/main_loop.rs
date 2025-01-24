@@ -6,12 +6,9 @@
 
 use crate::config::config_instance::Config;
 use crate::config::AppConfig;
-use crate::hardware::esxi::Esxi;
 use crate::hardware::system_information_monitor::SysInfoMonitor;
-use crate::network::network_util::NetworkUtil;
 use crate::sensor::sensor_util::SensorUtils;
 use crate::system::installer::InstallerUtil;
-use crate::system::system_util::SystemUtil;
 use log::{error, info};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -20,36 +17,8 @@ use std::time::Duration;
 
 /// Detects the environment and delegates execution to the appropriate loop.
 pub fn run_main_loop(running: &Arc<AtomicBool>) {
-    info!("Detecting environment and delegating.");
-    if SystemUtil::is_running_on_esxi() {
-        info!("System detected as running on ESXi.");
-        run_esxi_main_loop(running, Config::get());
-    } else {
-        info!("System detected as running on Linux.");
-        run_linux_main_loop(running, Config::get());
-    }
-}
-
-/// Main loop for ESXi systems.
-fn run_esxi_main_loop(running: &Arc<AtomicBool>, config: &AppConfig) {
-    let tjmax = Esxi::get_tjmax();
-    let (sockets, cores, threads) = Esxi::get_cpu_topology();
-
-    info!(
-        "ESXi Host Info: TjMax = {}°C, Sockets = {}, Cores = {}, Threads = {}",
-        tjmax, sockets, cores, threads
-    );
-
-    while running.load(Ordering::Relaxed) {
-        let esxi_data = Esxi::build_esxi_system_dto();
-
-        match NetworkUtil::send_with_retries(&esxi_data, &config.server, 3) {
-            Ok(_) => info!("ESXi CPU data sent successfully."),
-            Err(e) => error!("Failed to send ESXi CPU data: {}", e),
-        }
-
-        thread::sleep(Duration::from_secs(config.interval_secs));
-    }
+    info!("System detected as running on Linux.");
+    run_linux_main_loop(running, Config::get());
 }
 
 /// Main loop for Linux/Dev systems.

@@ -51,7 +51,7 @@ impl InstallerUtil {
             vec!["apt-get", "install", "-y", "lm-sensors"]
         };
 
-        match ExecutionUtil::execute("direct", command, &args) {
+        match ExecutionUtil::execute_with_method("direct", command, &args) {
             Ok(_) => true,
             Err(e) => {
                 error!("Failed to execute installation command: {}", e);
@@ -62,7 +62,7 @@ impl InstallerUtil {
 
     /// Checks if the user has sudo access.
     fn has_sudo_access() -> bool {
-        match ExecutionUtil::execute("direct", "sudo", &["-n", "true"]) {
+        match ExecutionUtil::execute_with_method("direct", "sudo", &["-n", "true"]) {
             Ok(_) => true,
             Err(e) => {
                 error!("Failed to check sudo access: {}", e);
@@ -78,7 +78,7 @@ impl InstallerUtil {
 
     /// Checks if a command is available in the system.
     fn is_command_available(command: &str) -> bool {
-        match ExecutionUtil::execute("direct", "which", &[command]) {
+        match ExecutionUtil::execute_with_method("direct", "which", &[command]) {
             Ok(_) => true,
             Err(e) => {
                 error!(

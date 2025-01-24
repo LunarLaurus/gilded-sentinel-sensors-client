@@ -7,12 +7,27 @@ use nix::unistd::{execv, fork, ForkResult};
 use std::ffi::CString;
 use std::process::{Command, Stdio};
 
+use crate::config::config_instance::Config;
+
 /// Utility class for executing commands in various ways.
 pub struct ExecutionUtil;
 
 #[allow(dead_code)]
 impl ExecutionUtil {
-    /// Dispatches command execution based on the method specified.
+    /// Executes a command with the default execution method.
+    ///
+    /// # Arguments
+    /// - `command`: The command to execute.
+    /// - `args`: A slice of arguments for the command.
+    ///
+    /// # Returns
+    /// - `Ok(String)`: The standard output of the command if successful.
+    /// - `Err(String)`: An error message if execution fails.
+    pub fn execute(command: &str, args: &[&str]) -> Result<String, String> {
+        Self::execute_with_method(Config::execution_method(), command, args)
+    }
+
+    /// Executes a command using the specified execution method.
     ///
     /// # Arguments
     /// - `method`: The method to execute the command (e.g., "no_fork", "execv", "std_command", "libc").
@@ -22,7 +37,11 @@ impl ExecutionUtil {
     /// # Returns
     /// - `Ok(String)`: The standard output of the command if successful.
     /// - `Err(String)`: An error message if execution fails.
-    pub fn execute(method: &str, command: &str, args: &[&str]) -> Result<String, String> {
+    pub fn execute_with_method(
+        method: &str,
+        command: &str,
+        args: &[&str],
+    ) -> Result<String, String> {
         debug!("Dispatching execution method: `{}`", method);
 
         match method {
@@ -88,12 +107,11 @@ impl ExecutionUtil {
                     }
                     Ok(WaitStatus::Signaled(_, signal, _)) => {
                         // Convert the signal to a human-readable format using Debug
-                        match Signal::try_from(signal) {
-                            Ok(signal_enum) => Err(format!(
-                                "Child process terminated by signal: {:?}",
-                                signal_enum
-                            )),
-                            Err(_) => Err(format!(
+                        match signal {
+                            Signal::SIGKILL | Signal::SIGTERM => {
+                                Err(format!("Child process terminated by signal: {:?}", signal))
+                            }
+                            _ => Err(format!(
                                 "Child process terminated by unknown signal: {:?}",
                                 signal
                             )),

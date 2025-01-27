@@ -73,12 +73,7 @@ impl NetworkUtil {
         server: &str,
         retries: usize,
     ) -> io::Result<()> {
-        Self::send_with_retries_define_timeout(
-            data,
-            server,
-            retries,
-            Duration::from_secs(2),
-        )
+        Self::send_with_retries_define_timeout(data, server, retries, Duration::from_secs(2))
     }
 
     /// Sends a generic serializable object to the server with a configurable number of retries.

@@ -128,28 +128,27 @@ impl NetworkUtil {
         } else {
             (server, "/".to_string()) // Default path is "/"
         };
-    
+
         // Split host:port and apply fallbacks
         let (host, port) = if let Some((host, port)) = host_port.split_once(':') {
             (host.to_string(), port.parse::<u16>().unwrap_or(8080))
         } else {
             (host_port.to_string(), 8080) // Default to port 8080
         };
-    
+
         // Default to localhost if the host is empty
         let host = if host.is_empty() {
             "localhost".to_string()
         } else {
             host
         };
-    
+
         // Construct the full host:port string
         let host_port = format!("{}:{}", host, port);
-    
+
         Ok((host_port, path))
     }
-    
-    
+
     /// Sends a generic serializable object as JSON to the server.
     ///
     /// # Parameters
@@ -162,30 +161,30 @@ impl NetworkUtil {
     pub fn send_object_to_server<T: Serialize>(data: &T, server: &str) -> io::Result<()> {
         // Extract host:port and path, applying fallbacks
         let (host_port, path) = Self::extract_host_and_path_with_fallback(server)?;
-    
+
         // Resolve the host:port
         let server_addr = host_port
             .to_socket_addrs()?
             .next()
             .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "Invalid server address"))?;
-    
+
         info!("Connecting to server at: {}", server_addr);
-    
+
         // Attempt to connect to the server with a timeout
         let stream_result = TcpStream::connect_timeout(&server_addr, Duration::from_secs(10));
-    
+
         match stream_result {
             Ok(mut stream) => {
                 info!("Successfully connected to the server at {}", server_addr);
-    
+
                 // Serialize the data into JSON format
                 let json_data = serde_json::to_string(data).map_err(|e| {
                     error!("Serialization error: {}", e);
                     io::Error::new(io::ErrorKind::InvalidData, "Failed to serialize data")
                 })?;
-    
+
                 debug!("Serialized data: {}", json_data);
-    
+
                 // Construct the HTTP request dynamically using the extracted path
                 let host = host_port.split(':').next().unwrap_or("127.0.0.1");
                 let request = format!(
@@ -195,13 +194,13 @@ impl NetworkUtil {
                     json_data.len(),
                     json_data
                 );
-    
+
                 debug!("Constructed HTTP request: {}", request);
-    
+
                 // Send the HTTP request
                 io::Write::write_all(&mut stream, request.as_bytes())?;
                 io::Write::flush(&mut stream)?;
-    
+
                 info!("Data successfully sent to the server.");
                 Ok(())
             }
@@ -211,5 +210,4 @@ impl NetworkUtil {
             }
         }
     }
-    
 }

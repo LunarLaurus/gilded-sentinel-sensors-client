@@ -151,6 +151,50 @@ impl SysInfoMonitor {
         }
     }
 
+    /// Retrieves the operating system name.
+    pub fn get_os_name(&self) -> String {
+        sysinfo::System::name().unwrap_or_else(|| "<unknown>".to_string())
+    }
+
+    /// Logs the operating system name.
+    pub fn log_os_name(&self) {
+        let os_name = self.get_os_name();
+        info!("OS Name: {}", os_name);
+    }
+
+    /// Retrieves the operating system version.
+    pub fn get_os_version(&self) -> String {
+        sysinfo::System::os_version().unwrap_or_else(|| "<unknown>".to_string())
+    }
+
+    /// Logs the operating system version.
+    pub fn log_os_version(&self) {
+        let os_version = self.get_os_version();
+        info!("OS Version: {}", os_version);
+    }
+
+    /// Retrieves the kernel version.
+    pub fn get_kernel_version(&self) -> String {
+        sysinfo::System::kernel_version().unwrap_or_else(|| "<unknown>".to_string())
+    }
+
+    /// Logs the kernel version.
+    pub fn log_kernel_version(&self) {
+        let kernel_version = self.get_kernel_version();
+        info!("Kernel Version: {}", kernel_version);
+    }
+
+    /// Retrieves the hostname.
+    pub fn get_host_name(&self) -> String {
+        sysinfo::System::host_name().unwrap_or_else(|| "<unknown>".to_string())
+    }
+
+    /// Logs the hostname.
+    pub fn log_host_name(&self) {
+        let host_name = self.get_host_name();
+        info!("Hostname: {}", host_name);
+    }
+
     /// Returns system details.
     pub fn get_system_details(&mut self) -> (String, String, String, String) {
         self.refresh_system();
@@ -159,11 +203,10 @@ impl SysInfoMonitor {
 
     /// Logs system details.
     pub fn log_system_details(&mut self) {
-        let (os_name, os_version, kernel_version, hostname) = self.get_system_details();
-        info!("OS Name: {}", os_name);
-        info!("OS Version: {}", os_version);
-        info!("Kernel Version: {}", kernel_version);
-        info!("Hostname: {}", hostname);
+        info!("OS Name: {}", self.get_os_name());
+        info!("OS Version: {}", self.get_os_version());
+        info!("Kernel Version: {}", self.get_kernel_version());
+        info!("Hostname: {}", self.get_host_name());
     }
 
     /// Returns system uptime.

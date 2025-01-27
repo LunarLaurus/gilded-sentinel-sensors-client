@@ -34,5 +34,6 @@ libc = { version = "0.2", features = ["extra_traits"] } # Low-level system acces
 nix = { version = "0.29.0", features = ["process"] }
 signal-hook-registry = "1.4"                            # Signal handling
 
-# --- System Monitoring ---
+# --- System ---
 sysinfo = "0.33.1" # Cross-platform system information library
+get_if_addrs = "0.5"

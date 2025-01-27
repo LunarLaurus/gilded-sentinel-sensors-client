@@ -2,32 +2,6 @@ use serde::Serialize;
 use std::fmt;
 use sysinfo::Component;
 
-// ESXi DTOs
-#[derive(Clone, Debug, Serialize)]
-pub struct EsxiCoreDetail {
-    pub core_id: String,
-    pub temperature: String,
-    pub digital_readout: String,
-    pub core_type: String,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct EsxiCpuDetail {
-    pub cpu_id: String,
-    pub socket_id: String,
-    pub cores: Vec<EsxiCoreDetail>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct EsxiSystemDto {
-    pub tjmax: i32,
-    pub sockets: i32,
-    pub cores_per_socket: i32,
-    pub threads_per_core: i32,
-    pub logical_processors: i32,
-    pub cpus: Vec<EsxiCpuDetail>,
-}
-
 // General System DTOs
 #[derive(Serialize, Debug)]
 pub struct CpuCoreData {
@@ -140,10 +114,16 @@ impl fmt::Display for Uptime {
         )
     }
 }
+#[derive(Serialize, Debug)]
+pub struct SystemInfo {
+    pub hostname: String,
+    pub uptime: Uptime,
+    pub management_ip: String,
+}
 
 #[derive(Serialize, Debug)]
 pub struct SensorData {
-    pub uptime: Uptime,
+    pub system_info: SystemInfo,
     pub cpu_info: CpuInfo,
     pub cpu_packages: Vec<CpuPackageData>,
     pub memory_info: MemoryInfo,

@@ -1,5 +1,6 @@
 #![cfg(unix)]
 
+use get_if_addrs::{get_if_addrs, IfAddr};
 use log::{debug, error, info};
 use serde::Serialize;
 use std::io::{self, Write};
@@ -11,6 +12,21 @@ use std::time::Duration;
 pub struct NetworkUtil;
 
 impl NetworkUtil {
+    /// Retrieves the system's primary IPv4 address.
+    pub fn get_primary_ipv4() -> String {
+        if let Ok(interfaces) = get_if_addrs() {
+            for interface in interfaces {
+                if let IfAddr::V4(v4addr) = interface.addr {
+                    // Exclude loopback addresses
+                    if !v4addr.ip.is_loopback() {
+                        return v4addr.ip.to_string();
+                    }
+                }
+            }
+        }
+        "<unknown>".to_string() // Return "<unknown>" if no valid address is found
+    }
+
     /// Sends a generic serializable object to the server with a configurable number of retries.
     ///
     /// # Parameters

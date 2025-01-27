@@ -146,13 +146,33 @@ impl SystemInfo {
         Uptime::from_seconds(sysinfo::System::uptime())
     }
 
+    /// Retrieves the operating system name.
+    pub fn os_name(&self) -> String {
+        sysinfo::System::name().unwrap_or_else(|| "<unknown>".to_string())
+    }
+
+    /// Retrieves the operating system version.
+    pub fn os_version(&self) -> String {
+        sysinfo::System::os_version().unwrap_or_else(|| "<unknown>".to_string())
+    }
+
+    /// Retrieves the kernel version.
+    pub fn kernel_version(&self) -> String {
+        sysinfo::System::kernel_version().unwrap_or_else(|| "<unknown>".to_string())
+    }
+
+    /// Retrieves the hostname of the system.
+    pub fn host_name(&self) -> String {
+        sysinfo::System::host_name().unwrap_or_else(|| "<unknown>".to_string())
+    }
+
     /// Retrieves system details such as OS name, version, kernel, hostname.
     pub fn system_details(&self) -> (String, String, String, String) {
         (
-            sysinfo::System::name().unwrap_or_else(|| "<unknown>".to_string()),
-            sysinfo::System::os_version().unwrap_or_else(|| "<unknown>".to_string()),
-            sysinfo::System::kernel_version().unwrap_or_else(|| "<unknown>".to_string()),
-            sysinfo::System::host_name().unwrap_or_else(|| "<unknown>".to_string()),
+            Self::os_name(self),
+            Self::os_version(self),
+            Self::kernel_version(self),
+            Self::host_name(self),
         )
     }
 }

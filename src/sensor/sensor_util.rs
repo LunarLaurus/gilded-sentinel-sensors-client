@@ -5,7 +5,7 @@ use serde::Serialize;
 use std::io;
 use std::process::{Command, Stdio};
 
-use crate::data::models::{CpuCoreData, CpuPackageData, SensorData};
+use crate::data::models::{CpuCoreData, CpuPackageData, SensorData, SystemInfo};
 use crate::hardware::system_information_monitor::SysInfoMonitor;
 use crate::network::network_util::NetworkUtil;
 
@@ -103,10 +103,15 @@ impl SensorUtils {
         let uptime = monitor.get_uptime();
         let components = monitor.get_components_info();
         let cpu_packages = Self::collect_cpu_package_data();
+        let system_info: SystemInfo = SystemInfo {
+            hostname: monitor.get_host_name(),
+            uptime,
+            management_ip: NetworkUtil::get_primary_ipv4(),
+        };
 
         // Construct the SensorData DTO
         let sensor_data = SensorData {
-            uptime,
+            system_info,
             cpu_info,
             memory_info,
             disks,

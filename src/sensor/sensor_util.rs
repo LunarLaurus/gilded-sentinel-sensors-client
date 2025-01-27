@@ -101,7 +101,8 @@ impl SensorUtils {
         let disks = monitor.get_disk_info();
         let networks = monitor.get_network_info();
         let uptime = monitor.get_uptime();
-        let components = monitor.get_components_info();
+        //let components = monitor.get_components_info();
+        let components = Vec::new();
         let cpu_packages = Self::collect_cpu_package_data();
         let system_info: SystemInfo = SystemInfo {
             hostname: monitor.get_host_name(),

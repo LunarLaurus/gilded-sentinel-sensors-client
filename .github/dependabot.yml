@@ -4,10 +4,8 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    assignees:
-      - "LunarLaurus"
-    reviewers:
-      - "LunarLaurus"
+    automerge: true
+    stability-days: 14
     labels:
       - "dependencies"
       - "rust"

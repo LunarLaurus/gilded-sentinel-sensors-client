@@ -35,5 +35,5 @@ nix = { version = "0.29.0", features = ["process"] }
 signal-hook-registry = "1.4"                            # Signal handling
 
 # --- System ---
-sysinfo = "0.33.1" # Cross-platform system information library
+sysinfo = "0.34.0" # Cross-platform system information library
 get_if_addrs = "0.5"

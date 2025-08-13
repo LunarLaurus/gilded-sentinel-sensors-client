@@ -20,7 +20,7 @@ debug = true
 # --- Core Dependencies ---
 serde = { version = "1.0", features = ["derive"] } # Serialization framework
 serde_json = "1.0"                                # JSON support
-toml = "0.8"                                     # TOML support
+toml = "0.9"                                     # TOML support
 
 # --- Argument Parsing ---
 clap = { version = "4.5", features = ["derive"] } # Command-line argument parsing
@@ -31,9 +31,9 @@ env_logger = "0.11"      # Logging implementation with environment configuration
 
 # --- Signal Handling ---
 libc = { version = "0.2", features = ["extra_traits"] } # Low-level system access
-nix = { version = "0.29.0", features = ["process"] }
+nix = { version = "0.30.0", features = ["process"] }
 signal-hook-registry = "1.4"                            # Signal handling
 
 # --- System ---
-sysinfo = "0.33.1" # Cross-platform system information library
+sysinfo = "0.36.0" # Cross-platform system information library
 get_if_addrs = "0.5"

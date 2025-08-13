@@ -1,6 +1,6 @@
 [package]
 name = "Gilded-Sentinel-Client"
-version = "0.1.5688"
+version = "0.1.5689"
 edition = "2021"
 description = "A system monitoring and reporting tool for systems with lm-sensors or ESXi 7."
 authors = ["LunarLaurus"]
